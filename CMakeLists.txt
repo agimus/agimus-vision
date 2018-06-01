@@ -30,20 +30,7 @@ include_directories(
   ${LibXml2_INCLUDE_DIRS}
 )
 
-add_executable(${PROJECT_NAME}_node src/main.cpp src/node.cpp)
-add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(${PROJECT_NAME}_node
-  ${catkin_LIBRARIES}
-  zbar # Necessary when the detectors are not used via pointers.
-)
-set_target_properties(${PROJECT_NAME}_node PROPERTIES OUTPUT_NAME tracker_box PREFIX "")
-
-
-install(TARGETS ${PROJECT_NAME}_node
-  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
+add_subdirectory(src/tracker_box)
 
 ## Mark cpp header files for installation
 install(DIRECTORY include
