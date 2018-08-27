@@ -8,7 +8,8 @@
 
 class DetectorAprilTag : public Detector
 {
-    vpDetectorAprilTag _apriltag_detector;
+
+
     const int _tag_id;
     const double _tag_size_meters;
 
@@ -17,9 +18,13 @@ class DetectorAprilTag : public Detector
 public:
     DetectorAprilTag( const vpCameraParameters &cam_parameters, const int tag_id, const double tag_size_meters );
 
-    bool detect( const vpImage< unsigned char > &gray_image );
+    bool analyseImage( const vpImage< unsigned char > &gray_image );
+
+    bool detect();
 
     void drawDebug( vpImage< vpRGBa > &image ) const;
+
+    static vpDetectorAprilTag Apriltag_detector;
 };
 
 #endif // __TRACKER_OBJECT__DETECTOR_APRILTAG_HPP__ 

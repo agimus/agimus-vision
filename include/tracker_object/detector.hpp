@@ -27,8 +27,10 @@ protected:
 
 public:
     Detector( const vpCameraParameters &cam_parameters );
+    
+    virtual bool analyseImage( const vpImage< unsigned char > &gray_image );
 
-    virtual bool detect( const vpImage< unsigned char > &gray_image );
+    virtual bool detect();
 
     virtual void drawDebug( vpImage< vpRGBa > &image ) const;
 

@@ -26,6 +26,7 @@ find_package(LibXml2 REQUIRED)
 add_service_files(
   FILES
   EmptyService.srv
+  AddAprilTagService.srv
 )
 
 generate_messages(

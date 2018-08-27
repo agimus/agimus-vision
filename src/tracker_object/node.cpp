@@ -37,9 +37,10 @@ Node::Node()
     waitForImage();
 
     // TF nodes to publish the position of the tracked object
-    _node_handle.param<std::string>("/objectNode", _tf_node, "object");
+    //_node_handle.param<std::string>("/objectNode", _tf_node, "object");
     _node_handle.param<std::string>("/parentNode", _tf_parent_node, "rgbd_rgb_optical_frame");
 
+    //_node_handle.param<bool>("/debugDisplay", _debug_display, false);
     _node_handle.param<bool>("/debugDisplay", _debug_display, true);
 
     
@@ -53,12 +54,16 @@ Node::Node()
         int id{};
         double tag_size_meters{};
 
-        _node_handle.param<int>( "/aprilTagId", id, 0 );
+        DetectorAprilTag::Apriltag_detector.setAprilTagPoseEstimationMethod( vpDetectorAprilTag::vpPoseEstimationMethod::BEST_RESIDUAL_VIRTUAL_VS );
+
+        _service = _node_handle.advertiseService( "add_april_tag_detector", &Node::addAprilTagService, this );
+        /*_node_handle.param<int>( "/aprilTagId", id, 0 );
         _node_handle.param<double>("/aprilTagSizeMillimeters", tag_size_meters, 80.0); 
             tag_size_meters /= 1000.;
-        _detector.reset( new DetectorAprilTag( _cam_parameters, id, tag_size_meters ) );
+
+        _detectors.emplace( 0, std::make_pair( DetectorAprilTag{ _cam_parameters, id, tag_size_meters }, std::string{ "object" } ) );*/
     }
-    else if( object_type == "chessboard" )
+    /*else if( object_type == "chessboard" )
     {
         int chessboard_h{}, chessboard_w{};
         double chessboard_square_size_meters{};
@@ -68,8 +73,8 @@ Node::Node()
         _node_handle.param<double>("/chessboardSquareSizeMillimeters", chessboard_square_size_meters, 23.5); 
             chessboard_square_size_meters /= 1000.;
 
-        _detector.reset( new DetectorChessboard( _cam_parameters, chessboard_w, chessboard_h, chessboard_square_size_meters ) );
-    }
+        _detectors.emplace_back( new DetectorChessboard( _cam_parameters, chessboard_w, chessboard_h, chessboard_square_size_meters ) );
+    }*/
 }
 
 void Node::waitForImage()
@@ -132,12 +137,18 @@ void Node::spin()
     {
         vpDisplay::display(_image);
 
-        if( _detector->detect( _gray_image ) )
+        if( !_detectors.empty() && (_detectors.begin())->second.first.analyseImage( _gray_image ) )
         {
-            publish_pose( _detector->getLastCMO() );
+            for( auto &detector : _detectors )
+            {   
+                if( detector.second.first.detect() )
+                {
+                    publish_pose( detector.second.first.getLastCMO(), detector.second.second );
             
-            if( _debug_display )
-                _detector->drawDebug( _image );
+                    if( _debug_display )
+                        detector.second.first.drawDebug( _image );
+                }
+            }
         }
 
         vpDisplay::flush(_image);
@@ -146,7 +157,17 @@ void Node::spin()
     }
 }
 
-void Node::publish_pose( const vpHomogeneousMatrix &cMo )
+bool Node::addAprilTagService( agimus_vision::AddAprilTagService::Request  &req,
+                               agimus_vision::AddAprilTagService::Response &res )
+{
+    if( _detectors.count( req.id ) != 0 )
+        return false;
+
+    _detectors.emplace( req.id, std::make_pair( DetectorAprilTag{ _cam_parameters, req.id, req.size_mm / 1000.0 }, req.node_name ) );
+    return true;
+}
+
+void Node::publish_pose( const vpHomogeneousMatrix &cMo, const std::string &node_name )
 {
     static tf2_ros::TransformBroadcaster broadcaster;
     
@@ -154,7 +175,7 @@ void Node::publish_pose( const vpHomogeneousMatrix &cMo )
     auto transform = visp_bridge::toGeometryMsgsTransform( cMo );
     geometry_msgs::TransformStamped transform_stamped{};
     transform_stamped.header.frame_id = _tf_parent_node;
-    transform_stamped.child_frame_id = _tf_node;
+    transform_stamped.child_frame_id = node_name;
     transform_stamped.header.stamp = ros::Time::now();
     transform_stamped.transform = transform;
 

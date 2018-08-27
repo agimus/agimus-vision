@@ -1,11 +1,14 @@
 #ifndef __TRACKER_BOX__NODE__HPP__
 #define __TRACKER_BOX__NODE__HPP__
 
-#include "tracker_object/detector.hpp" 
+#include "tracker_object/detector_apriltag.hpp" 
+
+#include "agimus_vision/AddAprilTagService.h"
 
 #include <mutex>
 #include <string>
 #include <memory>
+#include <vector>
 
 #include <ros/ros.h>
 
@@ -47,7 +50,7 @@ class Node
     bool _image_new;
 
     // Classes called to detect some object in the image and then track it
-    std::unique_ptr< Detector > _detector;
+    std::map< int, std::pair< DetectorAprilTag, std::string > > _detectors;
     //std::unique_ptr< Tracker > _tracker;
     
     bool _debug_display;
@@ -60,13 +63,17 @@ class Node
     void initTracking( int id );
     
     // Publish the object position rt the camera to TF
-    void publish_pose( const vpHomogeneousMatrix &cMo );
+    void publish_pose( const vpHomogeneousMatrix &cMo, const std::string &node_name );
 
+    ros::ServiceServer _service;
 public:
     Node();
 
     // Callbacks to use the images
     void frameCallback(const sensor_msgs::ImageConstPtr& image, const sensor_msgs::CameraInfoConstPtr& camera_info);
+    
+    bool addAprilTagService( agimus_vision::AddAprilTagService::Request  &req,
+                             agimus_vision::AddAprilTagService::Response &res );
 
     void spin();
 };

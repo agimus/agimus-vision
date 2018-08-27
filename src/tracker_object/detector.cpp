@@ -9,7 +9,12 @@ Detector::Detector( const vpCameraParameters &cam_parameters )
   , _state{ no_object }
 {}
 
-bool Detector::detect( const vpImage< unsigned char > &gray_image )
+bool Detector::analyseImage( const vpImage< unsigned char > &gray_image )
+{
+    return false;
+}
+
+bool Detector::detect()
 {
     return false;
 }

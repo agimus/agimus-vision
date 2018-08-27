@@ -15,8 +15,8 @@ DetectorChessboard::DetectorChessboard( const vpCameraParameters &cam_parameters
   , _chessboard_size{ chessboard_nb_corners_w, chessboard_nb_corners_h } 
   , _chessboard_square_size_meters{ chessboard_square_size_meters }
 {}
-    
-bool DetectorChessboard::detect( const vpImage< unsigned char > &gray_image )
+
+bool DetectorChessboard::analyseImage( const vpImage< unsigned char > &gray_image )
 {
   _image_points.clear();
   _image_points_cv.clear();
@@ -30,17 +30,24 @@ bool DetectorChessboard::detect( const vpImage< unsigned char > &gray_image )
     cv::cornerSubPix( mat_image, _image_points_cv, cv::Size(11,11), cv::Size(-1,-1),
         cv::TermCriteria( cv::TermCriteria::EPS + cv::TermCriteria::COUNT, 30, 0.1 ) );
 
+    return true;
+  }
+
+  _state = no_object;
+  return false;
+} 
+
+bool DetectorChessboard::detect()
+{
+  if( _state != no_object )
+  {
     for( unsigned int i{ 0 } ; i < _image_points_cv.size() ; ++i )
       _image_points.emplace_back( _image_points_cv[ i ].x, _image_points_cv[ i ].y );
-
-    if( _state == no_object )
-        _state = newly_acquired_object;
 
     computePose();
     return true;
   }
 
-  _state = no_object;
   return false;
 }
     

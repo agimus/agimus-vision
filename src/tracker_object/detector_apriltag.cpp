@@ -7,24 +7,29 @@
 #include <visp3/core/vpMeterPixelConversion.h>
 
 
+// Init common tag detector
+vpDetectorAprilTag DetectorAprilTag::Apriltag_detector{};
+
+
 DetectorAprilTag::DetectorAprilTag( const vpCameraParameters &cam_parameters, const int tag_id, const double tag_size_meters )
   : Detector( cam_parameters )
-  , _apriltag_detector{}
   , _tag_id{ tag_id }
   , _tag_size_meters{ tag_size_meters }
+{}
+
+bool DetectorAprilTag::analyseImage( const vpImage< unsigned char > &gray_image )
 {
-    _apriltag_detector.setAprilTagPoseEstimationMethod( vpDetectorAprilTag::vpPoseEstimationMethod::BEST_RESIDUAL_VIRTUAL_VS );
+    return Apriltag_detector.detect( gray_image );
 }
 
-bool DetectorAprilTag::detect( const vpImage< unsigned char > &gray_image )
+bool DetectorAprilTag::detect()
 {
     _image_points.clear();
-    _apriltag_detector.detect( gray_image );
 
-    for( size_t i{ 0 } ; i < _apriltag_detector.getNbObjects() ; ++i )
-        if( strEndsWith( _apriltag_detector.getMessage( i ), " " + std::to_string( _tag_id ) ) )
+    for( size_t i{ 0 } ; i < Apriltag_detector.getNbObjects() ; ++i )
+        if( strEndsWith( Apriltag_detector.getMessage( i ), " " + std::to_string( _tag_id ) ) )
         {
-            _image_points = _apriltag_detector.getPolygon( i );
+            _image_points = Apriltag_detector.getPolygon( i );
             
             if( _state == no_object )
                 _state = newly_acquired_object;
