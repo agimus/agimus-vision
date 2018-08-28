@@ -25,8 +25,8 @@ Node::Node()
  , _debug_display{ true }
 {
     // Get parameters for the node
-    _node_handle.param<std::string>("/imageTopic", _image_topic, "/camera/rgb/image_rect_color");
-    _node_handle.param<std::string>("/cameraInfoTopic", _camera_info_topic, "/camera/rgb/camera_info");
+    _node_handle.param<std::string>("imageTopic", _image_topic, "/camera/rgb/image_rect_color");
+    _node_handle.param<std::string>("cameraInfoTopic", _camera_info_topic, "/camera/rgb/camera_info");
     
     // Use those parameters to create the camera 
     _image_sub.reset(new message_filters::Subscriber<sensor_msgs::Image>{_node_handle, _image_topic, _queue_size}); 
@@ -38,15 +38,14 @@ Node::Node()
 
     // TF nodes to publish the position of the tracked object
     //_node_handle.param<std::string>("/objectNode", _tf_node, "object");
-    _node_handle.param<std::string>("/parentNode", _tf_parent_node, "rgbd_rgb_optical_frame");
+    _node_handle.param<std::string>("parentNode", _tf_parent_node, "rgbd_rgb_optical_frame");
 
-    //_node_handle.param<bool>("/debugDisplay", _debug_display, false);
-    _node_handle.param<bool>("/debugDisplay", _debug_display, true);
+    _node_handle.param<bool>("debugDisplay", _debug_display, false);
 
     
     // TODO: Switch for detector types and tracker init 
     std::string object_type{};
-    _node_handle.param<std::string>( "/objectType", object_type, "apriltag" );
+    _node_handle.param<std::string>( "objectType", object_type, "apriltag" );
     std::for_each( object_type.begin(), object_type.end(), [](char &c){ c = ::tolower( c ); } );
 
     if( object_type == "apriltag" )
@@ -120,12 +119,14 @@ void Node::frameCallback(const sensor_msgs::ImageConstPtr& image, const sensor_m
 
 void Node::spin()
 {
-    vpDisplayX disp{};
+    std::unique_ptr< vpDisplayX > disp{ nullptr };
 
     waitForImage();
+    if( _debug_display )
     {
+        disp.reset( new vpDisplayX{} );
         std::lock_guard<std::mutex> lock(_image_lock);
-        disp.init(_image);
+        disp->init(_image);
         vpDisplay::setTitle(_image, "Visual display");
     }
 
@@ -135,7 +136,8 @@ void Node::spin()
 
     while(ros::ok())
     {
-        vpDisplay::display(_image);
+        if( _debug_display )
+            vpDisplay::display(_image);
 
         if( !_detectors.empty() && (_detectors.begin())->second.first.analyseImage( _gray_image ) )
         {
@@ -151,7 +153,8 @@ void Node::spin()
             }
         }
 
-        vpDisplay::flush(_image);
+        if( _debug_display )
+            vpDisplay::flush(_image);
         ros::spinOnce();
         rate.sleep();
     }
