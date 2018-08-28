@@ -47,7 +47,7 @@ void DetectorAprilTag::drawDebug( vpImage< vpRGBa > &image ) const
     if( _state == no_object )
         return; 
 
-    std::array< vpColor, 4 > colors{ vpColor::red, vpColor::green, vpColor::blue, vpColor::cyan };
+    std::array< vpColor, 4 > colors{{ vpColor::red, vpColor::green, vpColor::blue, vpColor::cyan }};
 
     for( unsigned int i{ 0 } ; i < 4 ; ++i )
         vpDisplay::displayLine( image, _image_points[ i ], _image_points[ i == 3 ? 0 : i + 1 ], colors[ i ], 3 );
