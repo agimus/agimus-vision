@@ -1,0 +1,11 @@
+<launch>
+
+  <param name="imageTopic" value="/rgbd/rgb/image_rect" />
+  <param name="cameraInfoTopic" value="/rgbd/rgb/camera_info" />
+  <param name="parentNode" value="/talos/rgbd_rgb_optical_frame" />
+  <param name="displayDebug" value=false />
+  <param name="broadcastTopic" value=true />
+
+  <node pkg="agimus_vision" type="tracker_object" name="tag_tracker" />
+
+</launch>
