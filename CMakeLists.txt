@@ -46,7 +46,7 @@ include_directories(
 )
 
 add_subdirectory(src/tracker_object)
-add_subdirectory(src/extrinsic_calibration)
+##add_subdirectory(src/extrinsic_calibration)
 
 ## Mark cpp header files for installation
 install(DIRECTORY include
@@ -59,3 +59,8 @@ install(DIRECTORY include
 install(DIRECTORY objects
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )
+
+install(DIRECTORY launch
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+)
+

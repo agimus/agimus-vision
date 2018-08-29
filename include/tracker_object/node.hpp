@@ -14,6 +14,7 @@
 
 #include <tf/transform_broadcaster.h>
 
+#include <geometry_msgs/TransformStamped.h>
 #include <sensor_msgs/CameraInfo.h>
 #include <sensor_msgs/Image.h>
 
@@ -54,6 +55,8 @@ class Node
     //std::unique_ptr< Tracker > _tracker;
     
     bool _debug_display;
+    bool _broadcast_tf;
+    bool _broadcast_topic;
 
     // Wait for the first available image
     void waitForImage();
@@ -63,9 +66,12 @@ class Node
     void initTracking( int id );
     
     // Publish the object position rt the camera to TF
-    void publish_pose( const vpHomogeneousMatrix &cMo, const std::string &node_name );
+    void publish_pose_topic( const vpHomogeneousMatrix &cMo, const std::string &node_name, const ros::Time &timestamp );
+    void publish_pose_tf( const vpHomogeneousMatrix &cMo, const std::string &node_name, const ros::Time &timestamp );
 
-    ros::ServiceServer _service;
+    std::vector< ros::ServiceServer > _services;
+    ros::Publisher _publisherVision;
+
 public:
     Node();
 
