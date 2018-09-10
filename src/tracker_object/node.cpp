@@ -7,6 +7,7 @@
 #include <iostream>
 
 #include <ros/package.h>
+#include <ros/console.h>
 #include <sensor_msgs/image_encodings.h>
 
 #include <visp3/gui/vpDisplayX.h>
@@ -88,6 +89,7 @@ void Node::waitForImage()
             return;
         ros::spinOnce();
         rate.sleep();
+        ROS_WARN_DELAYED_THROTTLE(10, "Waiting for images");
     }
 }
 
