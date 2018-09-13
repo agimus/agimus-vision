@@ -3,7 +3,7 @@
 
 #include "agimus_vision/extrinsic_calibration/extrinsic_calibration.hpp"
 
-#include "agimus_vision/EmptyService.h"
+#include "std_srvs/Empty.h"
 
 #include <mutex>
 #include <string>
@@ -40,11 +40,11 @@ public:
 
     void spin();
 
-    bool addPoseToCalibration( agimus_vision::EmptyService::Request  &rq,
-                               agimus_vision::EmptyService::Response &res );
+    bool addPoseToCalibration( std_srvs::Empty::Request  &rq,
+                               std_srvs::Empty::Response &res );
 
-    bool computeCalibration( agimus_vision::EmptyService::Request  &rq,
-                             agimus_vision::EmptyService::Response &res );
+    bool computeCalibration( std_srvs::Empty::Request  &rq,
+                             std_srvs::Empty::Response &res );
 };
 
 }

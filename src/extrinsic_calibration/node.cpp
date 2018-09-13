@@ -88,8 +88,8 @@ void Node::spin()
     
 }
 
-bool Node::addPoseToCalibration( agimus_vision::EmptyService::Request  &rq,
-                                 agimus_vision::EmptyService::Response &res )
+bool Node::addPoseToCalibration( std_srvs::Empty::Request  &,
+                                 std_srvs::Empty::Response & )
 {
     if( _wMe_dist <= _wMe_dist_threshold && _cMo_dist <= _cMo_dist_threshold )
     {
@@ -104,8 +104,8 @@ bool Node::addPoseToCalibration( agimus_vision::EmptyService::Request  &rq,
     return false;
 }
 
-bool Node::computeCalibration( agimus_vision::EmptyService::Request  &rq,
-                               agimus_vision::EmptyService::Response &res )
+bool Node::computeCalibration( std_srvs::Empty::Request  &,
+                               std_srvs::Empty::Response & )
 {
     if( _calib.getNbPose() >= _nb_poses_needed )
     {

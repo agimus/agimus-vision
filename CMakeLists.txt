@@ -21,6 +21,7 @@ find_package(catkin REQUIRED COMPONENTS
   cv_bridge
   visp_bridge
   std_msgs
+  std_srvs
   sensor_msgs
   geometry_msgs
   tf
@@ -32,7 +33,6 @@ ADD_REQUIRED_DEPENDENCY(visp)
 
 add_service_files(
   FILES
-  EmptyService.srv
   AddAprilTagService.srv
 )
 
