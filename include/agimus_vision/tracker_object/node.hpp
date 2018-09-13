@@ -27,6 +27,12 @@
 namespace agimus_vision {
 namespace tracker_object {
 
+/// Tracking of April tag.
+///
+/// - It advertises a service "add_april_tag_detector" (See Node::addAprilTagService).
+/// - It publishes to /tf the tag pose if ROS param "broadcastTf" is \c true.
+///   In this case, the child node name is postfixed with ROS param "broadcastTfPostfix".
+/// - It publishes to /agimus/vision/tags/tf the tag pose if ROS param "broadcastTopic" is \c true.
 class Node
 {
     ros::NodeHandle _node_handle;
@@ -78,9 +84,11 @@ class Node
 public:
     Node();
 
-    // Callbacks to use the images
+    /// Callback to use the images
     void frameCallback(const sensor_msgs::ImageConstPtr& image, const sensor_msgs::CameraInfoConstPtr& camera_info);
     
+    /// Add an April tag
+    /// \include srv/AddAprilTagService.srv
     bool addAprilTagService( agimus_vision::AddAprilTagService::Request  &req,
                              agimus_vision::AddAprilTagService::Response &res );
 
