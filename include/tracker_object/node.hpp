@@ -41,6 +41,7 @@ class Node
     // Names of the publication TF nodes   
     std::string _tf_parent_node;
     std::string _tf_node;
+    std::string _broadcast_tf_postfix;
 
     // Images and parameters taken from the camera's topics
     std::mutex _image_lock;

@@ -44,6 +44,7 @@ Node::Node()
 
     // Broadcasting methods
     _node_handle.param<bool>("broadcastTf", _broadcast_tf, false);
+    _node_handle.param<std::string>("broadcastTfPostfix", _broadcast_tf_postfix, "");
     _node_handle.param<bool>("broadcastTopic", _broadcast_topic, false);
     
     // TODO: Switch for detector types and tracker init 
@@ -188,7 +189,7 @@ void Node::publish_pose_tf( const vpHomogeneousMatrix &cMo, const std::string &n
     auto transform = visp_bridge::toGeometryMsgsTransform( cMo );
     geometry_msgs::TransformStamped transform_stamped{};
     transform_stamped.header.frame_id = _tf_parent_node;
-    transform_stamped.child_frame_id = node_name;
+    transform_stamped.child_frame_id = node_name + _broadcast_tf_postfix;
     transform_stamped.header.stamp = timestamp;
     transform_stamped.transform = transform;
 
