@@ -1,5 +1,5 @@
-#include "common/common.hpp"
-#include "tracker_object/detector_apriltag.hpp"
+#include "agimus_vision/common/common.hpp"
+#include "agimus_vision/tracker_object/detector_apriltag.hpp"
 
 #include <visp3/core/vpColor.h>
 #include <visp3/core/vpDisplay.h>

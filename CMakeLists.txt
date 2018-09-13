@@ -45,7 +45,6 @@ generate_messages(
 catkin_package()
 
 include_directories(
-  include
   ${catkin_INCLUDE_DIRS}
   ${OPENCV_INCLUDE_DIRS}
 )
@@ -53,13 +52,17 @@ include_directories(
 add_subdirectory(src/tracker_object)
 ##add_subdirectory(src/extrinsic_calibration)
 
-## Mark cpp header files for installation
-install(DIRECTORY include
-  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
-  FILES_MATCHING PATTERN "*.hh"
-  PATTERN "*.h"
-  PATTERN ".svn" EXCLUDE
-)
+SET(${PROJECT_NAME}_HEADERS
+  include/agimus_vision/common/common.hpp
+
+  include/agimus_vision/extrinsic_calibration/extrinsic_calibration.hpp
+  include/agimus_vision/extrinsic_calibration/node.hpp
+
+  include/agimus_vision/tracker_object/detector.hpp
+  include/agimus_vision/tracker_object/detector_apriltag.hpp
+  include/agimus_vision/tracker_object/detector_chessboard.hpp
+  include/agimus_vision/tracker_object/node.hpp
+  )
 
 install(DIRECTORY objects
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
@@ -69,3 +72,4 @@ install(DIRECTORY launch
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )
 
+SETUP_PROJECT_FINALIZE()

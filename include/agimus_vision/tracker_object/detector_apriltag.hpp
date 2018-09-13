@@ -1,7 +1,7 @@
 #ifndef __TRACKER_OBJECT__DETECTOR_APRILTAG_HPP__ 
 #define __TRACKER_OBJECT__DETECTOR_APRILTAG_HPP__ 
 
-#include "tracker_object/detector.hpp"
+#include "agimus_vision/tracker_object/detector.hpp"
 
 #include <visp3/detection/vpDetectorAprilTag.h>
 

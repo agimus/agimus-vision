@@ -1,4 +1,4 @@
-#include "tracker_object/detector.hpp"
+#include "agimus_vision/tracker_object/detector.hpp"
 
 #include <visp3/vision/vpPose.h>
 #include <visp3/core/vpPixelMeterConversion.h>

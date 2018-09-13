@@ -1,7 +1,7 @@
 #ifndef __TRACKER_BOX__NODE__HPP__
 #define __TRACKER_BOX__NODE__HPP__
 
-#include "tracker_object/detector_apriltag.hpp" 
+#include "agimus_vision/tracker_object/detector_apriltag.hpp"
 
 #include "agimus_vision/AddAprilTagService.h"
 

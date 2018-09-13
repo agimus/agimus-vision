@@ -1,4 +1,4 @@
-#include "extrinsic_calibration/extrinsic_calibration.hpp"
+#include "agimus_vision/extrinsic_calibration/extrinsic_calibration.hpp"
 
 #include <ros/ros.h>
 

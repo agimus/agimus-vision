@@ -1,4 +1,4 @@
-#include "extrinsic_calibration/node.hpp"
+#include "agimus_vision/extrinsic_calibration/node.hpp"
 
 #include <functional>
 #include <iostream>

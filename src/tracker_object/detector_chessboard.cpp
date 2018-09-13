@@ -1,4 +1,4 @@
-#include "tracker_object/detector_chessboard.hpp"
+#include "agimus_vision/tracker_object/detector_chessboard.hpp"
 
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/calib3d/calib3d.hpp>

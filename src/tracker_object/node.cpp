@@ -1,6 +1,6 @@
-#include "tracker_object/node.hpp"
-#include "tracker_object/detector_apriltag.hpp"
-//#include "tracker_object/detector_chessboard.hpp"
+#include "agimus_vision/tracker_object/node.hpp"
+#include "agimus_vision/tracker_object/detector_apriltag.hpp"
+//#include "agimus_vision/tracker_object/detector_chessboard.hpp"
 
 #include <algorithm>
 #include <functional>

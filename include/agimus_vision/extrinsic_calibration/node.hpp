@@ -1,7 +1,7 @@
 #ifndef __EXTRINSIC_CALIBRATION__NODE__HPP__
 #define __EXTRINSIC_CALIBRATION__NODE__HPP__
 
-#include "extrinsic_calibration/extrinsic_calibration.hpp"
+#include "agimus_vision/extrinsic_calibration/extrinsic_calibration.hpp"
 
 #include "agimus_vision/EmptyService.h"
 
