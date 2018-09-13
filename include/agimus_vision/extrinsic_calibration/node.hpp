@@ -1,9 +1,9 @@
 #ifndef __EXTRINSIC_CALIBRATION__NODE__HPP__
 #define __EXTRINSIC_CALIBRATION__NODE__HPP__
 
-#include "extrinsic_calibration/extrinsic_calibration.hpp"
+#include "agimus_vision/extrinsic_calibration/extrinsic_calibration.hpp"
 
-#include "agimus_vision/EmptyService.h"
+#include "std_srvs/Empty.h"
 
 #include <mutex>
 #include <string>
@@ -11,6 +11,8 @@
 
 #include <ros/ros.h>
 
+namespace agimus_vision {
+namespace extrinsic_calibration {
 
 class Node
 {
@@ -38,11 +40,14 @@ public:
 
     void spin();
 
-    bool addPoseToCalibration( agimus_vision::EmptyService::Request  &rq,
-                               agimus_vision::EmptyService::Response &res );
+    bool addPoseToCalibration( std_srvs::Empty::Request  &rq,
+                               std_srvs::Empty::Response &res );
 
-    bool computeCalibration( agimus_vision::EmptyService::Request  &rq,
-                             agimus_vision::EmptyService::Response &res );
+    bool computeCalibration( std_srvs::Empty::Request  &rq,
+                             std_srvs::Empty::Response &res );
 };
+
+}
+}
 
 #endif

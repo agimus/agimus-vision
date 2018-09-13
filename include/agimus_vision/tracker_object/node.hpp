@@ -1,9 +1,10 @@
 #ifndef __TRACKER_BOX__NODE__HPP__
 #define __TRACKER_BOX__NODE__HPP__
 
-#include "tracker_object/detector_apriltag.hpp" 
+#include "agimus_vision/tracker_object/detector_apriltag.hpp"
 
 #include "agimus_vision/AddAprilTagService.h"
+#include "agimus_vision/SetChessboardService.h"
 
 #include <mutex>
 #include <string>
@@ -24,7 +25,15 @@
 #include <visp3/core/vpImage.h>
 #include <visp3/core/vpCameraParameters.h>
 
+namespace agimus_vision {
+namespace tracker_object {
 
+/// Tracking of April tag.
+///
+/// - It advertises a service "add_april_tag_detector" (See Node::addAprilTagService).
+/// - It publishes to /tf the tag pose if ROS param "broadcastTf" is \c true.
+///   In this case, the child node name is postfixed with ROS param "broadcastTfPostfix".
+/// - It publishes to /agimus/vision/tags/tf the tag pose if ROS param "broadcastTopic" is \c true.
 class Node
 {
     ros::NodeHandle _node_handle;
@@ -41,6 +50,7 @@ class Node
     // Names of the publication TF nodes   
     std::string _tf_parent_node;
     std::string _tf_node;
+    std::string _broadcast_tf_postfix;
 
     // Images and parameters taken from the camera's topics
     std::mutex _image_lock;
@@ -51,7 +61,7 @@ class Node
     bool _image_new;
 
     // Classes called to detect some object in the image and then track it
-    std::map< int, std::pair< DetectorAprilTag, std::string > > _detectors;
+    std::map< int, std::pair< DetectorPtr, std::string > > _detectors;
     //std::unique_ptr< Tracker > _tracker;
     
     bool _debug_display;
@@ -75,13 +85,23 @@ class Node
 public:
     Node();
 
-    // Callbacks to use the images
+    /// Callback to use the images
     void frameCallback(const sensor_msgs::ImageConstPtr& image, const sensor_msgs::CameraInfoConstPtr& camera_info);
     
+    /// Add an April tag
+    /// \include srv/AddAprilTagService.srv
     bool addAprilTagService( agimus_vision::AddAprilTagService::Request  &req,
                              agimus_vision::AddAprilTagService::Response &res );
+    
+    /// Setup detection of a chessboard
+    /// \include srv/SetChessboardService.srv
+    bool setChessboardService( agimus_vision::SetChessboardService::Request  &req,
+                               agimus_vision::SetChessboardService::Response &res );
 
     void spin();
 };
+
+}
+}
 
 #endif // __VISP_TRACKER_NODE_HPP__

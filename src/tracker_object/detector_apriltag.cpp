@@ -1,11 +1,12 @@
-#include "common/common.hpp"
-#include "tracker_object/detector_apriltag.hpp"
+#include "agimus_vision/tracker_object/detector_apriltag.hpp"
 
 #include <visp3/core/vpColor.h>
 #include <visp3/core/vpDisplay.h>
 #include <visp3/core/vpPoint.h>
 #include <visp3/core/vpMeterPixelConversion.h>
 
+namespace agimus_vision {
+namespace tracker_object {
 
 // Init common tag detector
 vpDetectorAprilTag DetectorAprilTag::Apriltag_detector{};
@@ -27,7 +28,15 @@ bool DetectorAprilTag::detect()
     _image_points.clear();
 
     for( size_t i{ 0 } ; i < Apriltag_detector.getNbObjects() ; ++i )
-        if( strEndsWith( Apriltag_detector.getMessage( i ), " " + std::to_string( _tag_id ) ) )
+    {
+        std::string tag = " " + std::to_string( _tag_id );
+        std::string msg = Apriltag_detector.getMessage ( i );
+        size_t stag = tag.size();
+        size_t smsg = msg.size();
+
+        // Checks whether msg ends with tag
+        if(    stag <= smsg
+            && msg.compare ( smsg - stag, stag, tag) == 0)
         {
             _image_points = Apriltag_detector.getPolygon( i );
             
@@ -37,6 +46,7 @@ bool DetectorAprilTag::detect()
             computePose();
             return true;
         }
+    }
 
     _state = no_object;
     return false;
@@ -82,4 +92,7 @@ std::vector< vpPoint > DetectorAprilTag::compute3DPoints() const
     pt.set_oX( - _tag_size_meters / 2. ); pt.set_oY( _tag_size_meters / 2. ); points.push_back( pt );
     
     return points;
+}
+
+}
 }

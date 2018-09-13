@@ -1,10 +1,12 @@
 #ifndef __TRACKER_OBJECT__DETECTOR_APRILTAG_HPP__ 
 #define __TRACKER_OBJECT__DETECTOR_APRILTAG_HPP__ 
 
-#include "tracker_object/detector.hpp"
+#include "agimus_vision/tracker_object/detector.hpp"
 
 #include <visp3/detection/vpDetectorAprilTag.h>
 
+namespace agimus_vision {
+namespace tracker_object {
 
 class DetectorAprilTag : public Detector
 {
@@ -26,5 +28,8 @@ public:
 
     static vpDetectorAprilTag Apriltag_detector;
 };
+
+}
+}
 
 #endif // __TRACKER_OBJECT__DETECTOR_APRILTAG_HPP__ 

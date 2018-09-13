@@ -1,12 +1,13 @@
-#include "tracker_object/node.hpp"
-#include "tracker_object/detector_apriltag.hpp"
-//#include "tracker_object/detector_chessboard.hpp"
+#include "agimus_vision/tracker_object/node.hpp"
+#include "agimus_vision/tracker_object/detector_apriltag.hpp"
+#include "agimus_vision/tracker_object/detector_chessboard.hpp"
 
 #include <algorithm>
 #include <functional>
 #include <iostream>
 
 #include <ros/package.h>
+#include <ros/console.h>
 #include <sensor_msgs/image_encodings.h>
 
 #include <visp3/gui/vpDisplayX.h>
@@ -17,11 +18,13 @@
 #include <visp_bridge/camera.h>
 #include <visp_bridge/3dpose.h>
 
+namespace agimus_vision {
+namespace tracker_object {
 
 Node::Node()
  : _node_handle{}
- , _image_new{ false }
  , _queue_size{ 10 }
+ , _image_new{ false }
  , _debug_display{ true }
 {
     // Get parameters for the node
@@ -44,38 +47,26 @@ Node::Node()
 
     // Broadcasting methods
     _node_handle.param<bool>("broadcastTf", _broadcast_tf, false);
+    _node_handle.param<std::string>("broadcastTfPostfix", _broadcast_tf_postfix, "");
     _node_handle.param<bool>("broadcastTopic", _broadcast_topic, false);
     
     // TODO: Switch for detector types and tracker init 
     std::string object_type{};
     _node_handle.param<std::string>( "objectType", object_type, "apriltag" );
-    std::for_each( object_type.begin(), object_type.end(), [](char &c){ c = ::tolower( c ); } );
+    std::for_each( object_type.begin(), object_type.end(), [](char &c){ c = (char)::tolower( c ); } );
 
     if( object_type == "apriltag" )
     {
         DetectorAprilTag::Apriltag_detector.setAprilTagPoseEstimationMethod( vpDetectorAprilTag::vpPoseEstimationMethod::BEST_RESIDUAL_VIRTUAL_VS );
 
         _services.push_back( _node_handle.advertiseService( "add_april_tag_detector", &Node::addAprilTagService, this ) );
-
-        _publisherVision = _node_handle.advertise< geometry_msgs::TransformStamped >( "/agimus/vision/tags", 100 );
-        /*_node_handle.param<int>( "/aprilTagId", id, 0 );
-        _node_handle.param<double>("/aprilTagSizeMillimeters", tag_size_meters, 80.0); 
-            tag_size_meters /= 1000.;
-
-        _detectors.emplace( 0, std::make_pair( DetectorAprilTag{ _cam_parameters, id, tag_size_meters }, std::string{ "object" } ) );*/
     }
-    /*else if( object_type == "chessboard" )
+    else if( object_type == "chessboard" )
     {
-        int chessboard_h{}, chessboard_w{};
-        double chessboard_square_size_meters{};
+        _services.push_back( _node_handle.advertiseService( "set_chessboard_detector", &Node::setChessboardService, this ) );
+    }
 
-        _node_handle.param<int>("/chessboardH", chessboard_h, 6);
-        _node_handle.param<int>("/chessboardW", chessboard_w, 9);
-        _node_handle.param<double>("/chessboardSquareSizeMillimeters", chessboard_square_size_meters, 23.5); 
-            chessboard_square_size_meters /= 1000.;
-
-        _detectors.emplace_back( new DetectorChessboard( _cam_parameters, chessboard_w, chessboard_h, chessboard_square_size_meters ) );
-    }*/
+    _publisherVision = _node_handle.advertise< geometry_msgs::TransformStamped >( "/agimus/vision/tags", 100 );
 }
 
 void Node::waitForImage()
@@ -87,6 +78,7 @@ void Node::waitForImage()
             return;
         ros::spinOnce();
         rate.sleep();
+        ROS_WARN_DELAYED_THROTTLE(10, "Waiting for images");
     }
 }
 
@@ -133,29 +125,27 @@ void Node::spin()
     }
 
     ros::Rate rate(30);
-    bool init_done{ false };
-
 
     while(ros::ok())
     {
         if( _debug_display )
             vpDisplay::display(_image);
 
-        if( !_detectors.empty() && (_detectors.begin())->second.first.analyseImage( _gray_image ) )
+        if( !_detectors.empty() && (_detectors.begin())->second.first->analyseImage( _gray_image ) )
         {
             auto timestamp = ros::Time::now();
 
             for( auto &detector : _detectors )
             {   
-                if( detector.second.first.detect() )
+                if( detector.second.first->detect() )
                 {
                     if( _broadcast_tf )
-                        publish_pose_tf( detector.second.first.getLastCMO(), detector.second.second, timestamp );
+                        publish_pose_tf( detector.second.first->getLastCMO(), detector.second.second, timestamp );
                     if( _broadcast_topic )
-                        publish_pose_topic( detector.second.first.getLastCMO(), detector.second.second, timestamp );
+                        publish_pose_topic( detector.second.first->getLastCMO(), detector.second.second, timestamp );
             
                     if( _debug_display )
-                        detector.second.first.drawDebug( _image );
+                        detector.second.first->drawDebug( _image );
                 }
             }
         }
@@ -173,10 +163,33 @@ bool Node::addAprilTagService( agimus_vision::AddAprilTagService::Request  &req,
     if( _detectors.count( req.id ) != 0 )
     {
         ROS_WARN_STREAM( "Id:" << req.id << " already in use." );
+        res.success = false;
         return false;
     }
 
-    _detectors.emplace( req.id, std::make_pair( DetectorAprilTag{ _cam_parameters, req.id, req.size_mm / 1000.0 }, req.node_name ) );
+    _detectors.emplace( req.id, std::make_pair(
+          DetectorPtr(new DetectorAprilTag( _cam_parameters, req.id, req.size_mm / 1000.0 )),
+          req.node_name )
+        );
+    res.success = true;
+    return true;
+}
+
+bool Node::setChessboardService( agimus_vision::SetChessboardService::Request  &req,
+                                 agimus_vision::SetChessboardService::Response &res )
+{
+    int id = 0;
+    if( _detectors.count( id ) != 0 )
+    {
+        _detectors.erase( id );
+        ROS_WARN_STREAM( "Erasing previous chessboard." );
+    }
+
+    _detectors.emplace( id, std::make_pair(
+          DetectorPtr(new DetectorChessboard( _cam_parameters, req.width, req.height, req.size_mm / 1000.0)),
+          req.node_name )
+        );
+    res.success = true;
     return true;
 }
 
@@ -188,7 +201,7 @@ void Node::publish_pose_tf( const vpHomogeneousMatrix &cMo, const std::string &n
     auto transform = visp_bridge::toGeometryMsgsTransform( cMo );
     geometry_msgs::TransformStamped transform_stamped{};
     transform_stamped.header.frame_id = _tf_parent_node;
-    transform_stamped.child_frame_id = node_name;
+    transform_stamped.child_frame_id = node_name + _broadcast_tf_postfix;
     transform_stamped.header.stamp = timestamp;
     transform_stamped.transform = transform;
 
@@ -208,4 +221,7 @@ void Node::publish_pose_topic( const vpHomogeneousMatrix &cMo, const std::string
     transform_stamped.transform = transform;
 
     _publisherVision.publish( transform_stamped );
+}
+
+}
 }

@@ -1,11 +1,15 @@
 #ifndef __TRACKER_OBJECT__DETECTOR_HPP__ 
 #define __TRACKER_OBJECT__DETECTOR_HPP__ 
 
+#include <memory>
+
 #include <visp3/core/vpHomogeneousMatrix.h>
 #include <visp3/core/vpCameraParameters.h>
 #include <visp3/core/vpImagePoint.h>
 #include <visp3/core/vpImage.h>
 
+namespace agimus_vision {
+namespace tracker_object {
 
 class Detector
 {
@@ -36,5 +40,10 @@ public:
 
     vpHomogeneousMatrix getLastCMO() const;
 };
+
+typedef std::shared_ptr<Detector> DetectorPtr;
+
+}
+}
 
 #endif // __TRACKER_OBJECT__DETECTOR_HPP__ 

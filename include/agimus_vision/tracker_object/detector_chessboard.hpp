@@ -1,12 +1,14 @@
 #ifndef __TRACKER_OBJECT__DETECTOR_CHESSBOARD_HPP__ 
 #define __TRACKER_OBJECT__DETECTOR_CHESSBOARD_HPP__ 
 
-#include "tracker_object/detector.hpp"
+#include "agimus_vision/tracker_object/detector.hpp"
 
 #include <visp3/detection/vpDetectorAprilTag.h>
 
 #include <opencv2/core/core.hpp>
 
+namespace agimus_vision {
+namespace tracker_object {
 
 class DetectorChessboard : public Detector
 {
@@ -27,5 +29,8 @@ public:
 
     void drawDebug( vpImage< vpRGBa > &image ) const;
 };
+
+}
+}
 
 #endif // __TRACKER_OBJECT__DETECTOR_CHESSBOARD_HPP__ 
