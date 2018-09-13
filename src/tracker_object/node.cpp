@@ -171,15 +171,17 @@ void Node::spin()
 }
 
 bool Node::addAprilTagService( agimus_vision::AddAprilTagService::Request  &req,
-                               agimus_vision::AddAprilTagService::Response &/*res*/ )
+                               agimus_vision::AddAprilTagService::Response &res )
 {
     if( _detectors.count( req.id ) != 0 )
     {
         ROS_WARN_STREAM( "Id:" << req.id << " already in use." );
+        res.success = false;
         return false;
     }
 
     _detectors.emplace( req.id, std::make_pair( DetectorAprilTag{ _cam_parameters, req.id, req.size_mm / 1000.0 }, req.node_name ) );
+    res.success = true;
     return true;
 }
 
