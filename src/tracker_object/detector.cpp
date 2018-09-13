@@ -3,6 +3,8 @@
 #include <visp3/vision/vpPose.h>
 #include <visp3/core/vpPixelMeterConversion.h>
 
+namespace agimus_vision {
+namespace tracker_object {
 
 Detector::Detector( const vpCameraParameters &cam_parameters )
   : _state{ no_object }
@@ -71,4 +73,7 @@ void Detector::computePose()
 std::vector< vpPoint > Detector::compute3DPoints() const
 {
     return std::vector< vpPoint >{};
+}
+
+}
 }

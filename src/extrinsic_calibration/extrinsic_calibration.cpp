@@ -2,6 +2,8 @@
 
 #include <ros/ros.h>
 
+namespace agimus_vision {
+namespace extrinsic_calibration {
 
 ExtrinsicCalibration::ExtrinsicCalibration()
 {}
@@ -45,4 +47,7 @@ void ExtrinsicCalibration::saveEMCToFile( std::string filename )
 unsigned int ExtrinsicCalibration::getNbPose() const 
 {
     return (unsigned int)_cMo_vec.size();
+}
+
+}
 }

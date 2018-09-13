@@ -6,6 +6,8 @@
 #include <visp3/core/vpImagePoint.h>
 #include <visp3/core/vpImage.h>
 
+namespace agimus_vision {
+namespace tracker_object {
 
 class Detector
 {
@@ -36,5 +38,8 @@ public:
 
     vpHomogeneousMatrix getLastCMO() const;
 };
+
+}
+}
 
 #endif // __TRACKER_OBJECT__DETECTOR_HPP__ 

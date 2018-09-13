@@ -8,6 +8,8 @@
 #include <visp3/core/vpImageConvert.h>
 #include <visp3/core/vpPoint.h>
 
+namespace agimus_vision {
+namespace tracker_object {
 
 DetectorChessboard::DetectorChessboard( const vpCameraParameters &cam_parameters, const int chessboard_nb_corners_w, 
                                         const int chessboard_nb_corners_h, const double chessboard_square_size_meters )
@@ -83,4 +85,7 @@ std::vector< vpPoint > DetectorChessboard::compute3DPoints() const
     }
 
   return points;
+}
+
+}
 }

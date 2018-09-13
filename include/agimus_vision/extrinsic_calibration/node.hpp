@@ -11,6 +11,8 @@
 
 #include <ros/ros.h>
 
+namespace agimus_vision {
+namespace extrinsic_calibration {
 
 class Node
 {
@@ -44,5 +46,8 @@ public:
     bool computeCalibration( agimus_vision::EmptyService::Request  &rq,
                              agimus_vision::EmptyService::Response &res );
 };
+
+}
+}
 
 #endif

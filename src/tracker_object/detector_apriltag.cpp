@@ -5,6 +5,8 @@
 #include <visp3/core/vpPoint.h>
 #include <visp3/core/vpMeterPixelConversion.h>
 
+namespace agimus_vision {
+namespace tracker_object {
 
 // Init common tag detector
 vpDetectorAprilTag DetectorAprilTag::Apriltag_detector{};
@@ -90,4 +92,7 @@ std::vector< vpPoint > DetectorAprilTag::compute3DPoints() const
     pt.set_oX( - _tag_size_meters / 2. ); pt.set_oY( _tag_size_meters / 2. ); points.push_back( pt );
     
     return points;
+}
+
+}
 }

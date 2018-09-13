@@ -6,6 +6,8 @@
 
 #include <visp3/vision/vpCalibration.h>
 
+namespace agimus_vision {
+namespace extrinsic_calibration {
 
 // Compute the transformation between the end effector containing a camera and the camera frame
 class ExtrinsicCalibration
@@ -24,5 +26,8 @@ public:
 
     unsigned int getNbPose() const; 
 };
+
+}
+}
 
 #endif

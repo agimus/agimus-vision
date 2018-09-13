@@ -18,6 +18,8 @@
 #include <visp_bridge/camera.h>
 #include <visp_bridge/3dpose.h>
 
+namespace agimus_vision {
+namespace tracker_object {
 
 Node::Node()
  : _node_handle{}
@@ -209,4 +211,7 @@ void Node::publish_pose_topic( const vpHomogeneousMatrix &cMo, const std::string
     transform_stamped.transform = transform;
 
     _publisherVision.publish( transform_stamped );
+}
+
+}
 }

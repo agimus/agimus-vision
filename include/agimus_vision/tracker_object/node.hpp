@@ -24,6 +24,8 @@
 #include <visp3/core/vpImage.h>
 #include <visp3/core/vpCameraParameters.h>
 
+namespace agimus_vision {
+namespace tracker_object {
 
 class Node
 {
@@ -84,5 +86,8 @@ public:
 
     void spin();
 };
+
+}
+}
 
 #endif // __VISP_TRACKER_NODE_HPP__

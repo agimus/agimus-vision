@@ -10,7 +10,8 @@
 
 #include <visp_bridge/3dpose.h>
 
-
+namespace agimus_vision {
+namespace extrinsic_calibration {
 
 Node::Node()
  : _node_handle{}
@@ -146,3 +147,7 @@ double Node::homogeneousTransformMatrixDistanceMetric( const vpHomogeneousMatrix
 
     return strengh( a.inverse() * b );
 }
+
+}
+}
+
