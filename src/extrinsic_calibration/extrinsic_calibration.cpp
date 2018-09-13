@@ -44,5 +44,5 @@ void ExtrinsicCalibration::saveEMCToFile( std::string filename )
 
 unsigned int ExtrinsicCalibration::getNbPose() const 
 {
-    return _cMo_vec.size();
+    return (unsigned int)_cMo_vec.size();
 }

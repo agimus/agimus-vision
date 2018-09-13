@@ -21,8 +21,8 @@
 
 Node::Node()
  : _node_handle{}
- , _image_new{ false }
  , _queue_size{ 10 }
+ , _image_new{ false }
  , _debug_display{ true }
 {
     // Get parameters for the node
@@ -51,7 +51,7 @@ Node::Node()
     // TODO: Switch for detector types and tracker init 
     std::string object_type{};
     _node_handle.param<std::string>( "objectType", object_type, "apriltag" );
-    std::for_each( object_type.begin(), object_type.end(), [](char &c){ c = ::tolower( c ); } );
+    std::for_each( object_type.begin(), object_type.end(), [](char &c){ c = (char)::tolower( c ); } );
 
     if( object_type == "apriltag" )
     {
@@ -136,8 +136,6 @@ void Node::spin()
     }
 
     ros::Rate rate(30);
-    bool init_done{ false };
-
 
     while(ros::ok())
     {
@@ -171,7 +169,7 @@ void Node::spin()
 }
 
 bool Node::addAprilTagService( agimus_vision::AddAprilTagService::Request  &req,
-                               agimus_vision::AddAprilTagService::Response &res )
+                               agimus_vision::AddAprilTagService::Response &/*res*/ )
 {
     if( _detectors.count( req.id ) != 0 )
     {

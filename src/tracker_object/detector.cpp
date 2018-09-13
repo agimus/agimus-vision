@@ -5,11 +5,11 @@
 
 
 Detector::Detector( const vpCameraParameters &cam_parameters )
-  : _cam_parameters{ cam_parameters }
-  , _state{ no_object }
+  : _state{ no_object }
+  , _cam_parameters{ cam_parameters }
 {}
 
-bool Detector::analyseImage( const vpImage< unsigned char > &gray_image )
+bool Detector::analyseImage( const vpImage< unsigned char > &/*gray_image*/ )
 {
     return false;
 }
@@ -19,7 +19,7 @@ bool Detector::detect()
     return false;
 }
 
-void Detector::drawDebug( vpImage< vpRGBa > &image ) const
+void Detector::drawDebug( vpImage< vpRGBa > &/*image*/ ) const
 {}
 
 vpHomogeneousMatrix Detector::getLastCMO() const
