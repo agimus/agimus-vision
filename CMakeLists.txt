@@ -53,8 +53,6 @@ add_subdirectory(src/tracker_object)
 ##add_subdirectory(src/extrinsic_calibration)
 
 SET(${PROJECT_NAME}_HEADERS
-  include/agimus_vision/common/common.hpp
-
   include/agimus_vision/extrinsic_calibration/extrinsic_calibration.hpp
   include/agimus_vision/extrinsic_calibration/node.hpp
 
