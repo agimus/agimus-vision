@@ -4,6 +4,7 @@
 #include "agimus_vision/tracker_object/detector_apriltag.hpp"
 
 #include "agimus_vision/AddAprilTagService.h"
+#include "agimus_vision/SetChessboardService.h"
 
 #include <mutex>
 #include <string>
@@ -60,7 +61,7 @@ class Node
     bool _image_new;
 
     // Classes called to detect some object in the image and then track it
-    std::map< int, std::pair< DetectorAprilTag, std::string > > _detectors;
+    std::map< int, std::pair< DetectorPtr, std::string > > _detectors;
     //std::unique_ptr< Tracker > _tracker;
     
     bool _debug_display;
@@ -91,6 +92,11 @@ public:
     /// \include srv/AddAprilTagService.srv
     bool addAprilTagService( agimus_vision::AddAprilTagService::Request  &req,
                              agimus_vision::AddAprilTagService::Response &res );
+    
+    /// Setup detection of a chessboard
+    /// \include srv/SetChessboardService.srv
+    bool setChessboardService( agimus_vision::SetChessboardService::Request  &req,
+                               agimus_vision::SetChessboardService::Response &res );
 
     void spin();
 };

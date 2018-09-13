@@ -1,6 +1,6 @@
 #include "agimus_vision/tracker_object/node.hpp"
 #include "agimus_vision/tracker_object/detector_apriltag.hpp"
-//#include "agimus_vision/tracker_object/detector_chessboard.hpp"
+#include "agimus_vision/tracker_object/detector_chessboard.hpp"
 
 #include <algorithm>
 #include <functional>
@@ -60,26 +60,13 @@ Node::Node()
         DetectorAprilTag::Apriltag_detector.setAprilTagPoseEstimationMethod( vpDetectorAprilTag::vpPoseEstimationMethod::BEST_RESIDUAL_VIRTUAL_VS );
 
         _services.push_back( _node_handle.advertiseService( "add_april_tag_detector", &Node::addAprilTagService, this ) );
-
-        _publisherVision = _node_handle.advertise< geometry_msgs::TransformStamped >( "/agimus/vision/tags", 100 );
-        /*_node_handle.param<int>( "/aprilTagId", id, 0 );
-        _node_handle.param<double>("/aprilTagSizeMillimeters", tag_size_meters, 80.0); 
-            tag_size_meters /= 1000.;
-
-        _detectors.emplace( 0, std::make_pair( DetectorAprilTag{ _cam_parameters, id, tag_size_meters }, std::string{ "object" } ) );*/
     }
-    /*else if( object_type == "chessboard" )
+    else if( object_type == "chessboard" )
     {
-        int chessboard_h{}, chessboard_w{};
-        double chessboard_square_size_meters{};
+        _services.push_back( _node_handle.advertiseService( "set_chessboard_detector", &Node::setChessboardService, this ) );
+    }
 
-        _node_handle.param<int>("/chessboardH", chessboard_h, 6);
-        _node_handle.param<int>("/chessboardW", chessboard_w, 9);
-        _node_handle.param<double>("/chessboardSquareSizeMillimeters", chessboard_square_size_meters, 23.5); 
-            chessboard_square_size_meters /= 1000.;
-
-        _detectors.emplace_back( new DetectorChessboard( _cam_parameters, chessboard_w, chessboard_h, chessboard_square_size_meters ) );
-    }*/
+    _publisherVision = _node_handle.advertise< geometry_msgs::TransformStamped >( "/agimus/vision/tags", 100 );
 }
 
 void Node::waitForImage()
@@ -144,21 +131,21 @@ void Node::spin()
         if( _debug_display )
             vpDisplay::display(_image);
 
-        if( !_detectors.empty() && (_detectors.begin())->second.first.analyseImage( _gray_image ) )
+        if( !_detectors.empty() && (_detectors.begin())->second.first->analyseImage( _gray_image ) )
         {
             auto timestamp = ros::Time::now();
 
             for( auto &detector : _detectors )
             {   
-                if( detector.second.first.detect() )
+                if( detector.second.first->detect() )
                 {
                     if( _broadcast_tf )
-                        publish_pose_tf( detector.second.first.getLastCMO(), detector.second.second, timestamp );
+                        publish_pose_tf( detector.second.first->getLastCMO(), detector.second.second, timestamp );
                     if( _broadcast_topic )
-                        publish_pose_topic( detector.second.first.getLastCMO(), detector.second.second, timestamp );
+                        publish_pose_topic( detector.second.first->getLastCMO(), detector.second.second, timestamp );
             
                     if( _debug_display )
-                        detector.second.first.drawDebug( _image );
+                        detector.second.first->drawDebug( _image );
                 }
             }
         }
@@ -180,7 +167,28 @@ bool Node::addAprilTagService( agimus_vision::AddAprilTagService::Request  &req,
         return false;
     }
 
-    _detectors.emplace( req.id, std::make_pair( DetectorAprilTag{ _cam_parameters, req.id, req.size_mm / 1000.0 }, req.node_name ) );
+    _detectors.emplace( req.id, std::make_pair(
+          DetectorPtr(new DetectorAprilTag( _cam_parameters, req.id, req.size_mm / 1000.0 )),
+          req.node_name )
+        );
+    res.success = true;
+    return true;
+}
+
+bool Node::setChessboardService( agimus_vision::SetChessboardService::Request  &req,
+                                 agimus_vision::SetChessboardService::Response &res )
+{
+    int id = 0;
+    if( _detectors.count( id ) != 0 )
+    {
+        _detectors.erase( id );
+        ROS_WARN_STREAM( "Erasing previous chessboard." );
+    }
+
+    _detectors.emplace( id, std::make_pair(
+          DetectorPtr(new DetectorChessboard( _cam_parameters, req.width, req.height, req.size_mm / 1000.0)),
+          req.node_name )
+        );
     res.success = true;
     return true;
 }

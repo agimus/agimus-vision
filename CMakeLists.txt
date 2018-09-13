@@ -34,6 +34,7 @@ ADD_REQUIRED_DEPENDENCY(visp)
 add_service_files(
   FILES
   AddAprilTagService.srv
+  SetChessboardService.srv
 )
 
 generate_messages(
