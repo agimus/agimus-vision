@@ -5,6 +5,8 @@ target_link_libraries(${PROJECT_NAME}_tracker_object
   ${OpenCV_LIBS}
   zbar # Necessary when the detectors are not used via pointers.
 )
+
+PKG_CONFIG_USE_DEPENDENCY(${PROJECT_NAME}_tracker_object visp)
 set_target_properties(${PROJECT_NAME}_tracker_object PROPERTIES OUTPUT_NAME tracker_object PREFIX "")
 
 

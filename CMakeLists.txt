@@ -1,5 +1,15 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(agimus_vision)
+
+SET(CXX_DISABLE_WERROR TRUE)
+
+INCLUDE(cmake/base.cmake)
+
+# These variables have to be defined before running SETUP_PROJECT
+SET(PROJECT_NAME agimus_vision)
+SET(PROJECT_DESCRIPTION "Computer vision for Agimus")
+SET(PROJECT_URL https://github.com/agimus/agimus-vision)
+
+SETUP_PROJECT()
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 add_compile_options(-std=c++11)
@@ -18,10 +28,7 @@ find_package(catkin REQUIRED COMPONENTS
 
 find_package(OpenCV REQUIRED)
 
-find_package(VISP REQUIRED)
-
-find_package(LibXml2 REQUIRED)
-
+ADD_REQUIRED_DEPENDENCY(visp)
 
 add_service_files(
   FILES
@@ -41,8 +48,6 @@ include_directories(
   include
   ${catkin_INCLUDE_DIRS}
   ${OPENCV_INCLUDE_DIRS}
-  ${VISP_INCLUDE_DIRS}
-  ${LibXml2_INCLUDE_DIRS}
 )
 
 add_subdirectory(src/tracker_object)

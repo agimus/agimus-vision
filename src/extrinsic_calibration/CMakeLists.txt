@@ -3,6 +3,7 @@ add_dependencies(${PROJECT_NAME}_camera_calibration ${${PROJECT_NAME}_EXPORTED_T
 target_link_libraries(${PROJECT_NAME}_camera_calibration
   ${catkin_LIBRARIES}
 )
+PKG_CONFIG_USE_DEPENDENCY(${PROJECT_NAME}_camera_calibration visp)
 set_target_properties(${PROJECT_NAME}_camera_calibration PROPERTIES OUTPUT_NAME camera_calibration PREFIX "")
 
 
