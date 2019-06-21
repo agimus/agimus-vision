@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 2.8.3)
 
-SET(CXX_DISABLE_WERROR TRUE)
-
 INCLUDE(cmake/base.cmake)
+
+SET(CXX_DISABLE_WERROR TRUE)
 
 # These variables have to be defined before running SETUP_PROJECT
 SET(PROJECT_NAME agimus_vision)
