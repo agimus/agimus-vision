@@ -38,7 +38,7 @@ Node::Node()
     // Use those parameters to create the camera 
     _image_sub.reset(new message_filters::Subscriber<sensor_msgs::Image>{_node_handle, _image_topic, _queue_size}); 
     _camera_info_sub.reset(new message_filters::Subscriber<sensor_msgs::CameraInfo>{_node_handle, _camera_info_topic, _queue_size});
-    _image_info_sync.reset(new message_filters::TimeSynchronizer<sensor_msgs::Image, sensor_msgs::CameraInfo>{*_image_sub, *_camera_info_sub, _queue_size});
+    _image_info_sync.reset(new message_filters::TimeSynchronizer<sensor_msgs::Image, sensor_msgs::CameraInfo>{*_image_sub, *_camera_info_sub, _queue_size*5});
     _image_info_sync->registerCallback(std::bind(&Node::frameCallback, this, std::placeholders::_1, std::placeholders::_2));
 
     waitForImage();
@@ -82,7 +82,7 @@ void Node::waitForImage()
             return;
         ros::spinOnce();
         rate.sleep();
-        ROS_WARN_DELAYED_THROTTLE(10, "Waiting for images");
+        ROS_INFO_DELAYED_THROTTLE(10, "Waiting for images");
     }
 }
 
@@ -129,7 +129,7 @@ void Node::spin()
     }
 
     ros::Rate rate(30);
-
+    ROS_INFO_STREAM( "Node running." );
     while(ros::ok())
     {
         if( _debug_display )
@@ -169,11 +169,12 @@ bool Node::addAprilTagService( agimus_vision::AddAprilTagService::Request  &req,
 {
     if( _detectors.count( req.id ) != 0 )
     {
-        ROS_WARN_STREAM( "Id:" << req.id << " already in use." );
+        ROS_INFO_STREAM( "Id:" << req.id << " already in use." );
         res.success = false;
         return false;
     }
 
+    ROS_INFO_STREAM( "Id: " << req.id << " now being tracked." );
     _detectors.emplace( req.id, std::make_pair(
           DetectorPtr(new DetectorAprilTag( _cam_parameters, req.id, req.size_mm / 1000.0 )),
           std::make_pair( req.parent_node_name, req.node_name ))
@@ -189,7 +190,7 @@ bool Node::setChessboardService( agimus_vision::SetChessboardService::Request  &
     if( _detectors.count( id ) != 0 )
     {
         _detectors.erase( id );
-        ROS_WARN_STREAM( "Erasing previous chessboard." );
+        ROS_INFO_STREAM( "Erasing previous chessboard." );
     }
 
     _detectors.emplace( id, std::make_pair(
