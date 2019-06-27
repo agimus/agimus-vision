@@ -1,11 +1,12 @@
 <launch>
 
-  <param name="imageTopic" value="/rgbd/rgb/image_rect" />
-  <param name="cameraInfoTopic" value="/rgbd/rgb/camera_info" />
+  <param name="imageTopic" value="/rgbd/rgb/high_res/image_rect" />
+  <param name="cameraInfoTopic" value="/rgbd/rgb/high_res/camera_info" />
   <param name="parentNode" value="talos/rgbd_rgb_optical_frame" />
   <param name="displayDebug" value="false" />
   <param name="broadcastTopic" value="true" />
+  <param name="broadcastTf" value="true" />
 
-  <node pkg="agimus_vision" type="tracker_object" name="tag_tracker" />
+  <node pkg="agimus_vision" type="tracker_object" name="tag_tracker" output="screen"/>
 
 </launch>
