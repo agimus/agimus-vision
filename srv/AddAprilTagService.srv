@@ -1,5 +1,6 @@
 int16 id
 float64 size_mm
 string node_name
+string parent_node_name
 ---
 bool success

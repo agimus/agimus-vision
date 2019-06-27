@@ -13,7 +13,8 @@
 
 #include <ros/ros.h>
 
-#include <tf/transform_broadcaster.h>
+#include <tf2_ros/transform_broadcaster.h>
+#include <tf2_ros/transform_listener.h>
 
 #include <geometry_msgs/TransformStamped.h>
 #include <sensor_msgs/CameraInfo.h>
@@ -46,9 +47,11 @@ class Node
     std::unique_ptr< message_filters::Subscriber<sensor_msgs::Image> > _image_sub;
     std::unique_ptr< message_filters::Subscriber<sensor_msgs::CameraInfo> > _camera_info_sub;
     std::unique_ptr< message_filters::TimeSynchronizer<sensor_msgs::Image, sensor_msgs::CameraInfo> > _image_info_sync;
+    tf2_ros::Buffer _tf_buffer;
+    tf2_ros::TransformListener _tf_listener;
 
     // Names of the publication TF nodes   
-    std::string _tf_parent_node;
+    std::string _tf_camera_node;
     std::string _tf_node;
     std::string _broadcast_tf_postfix;
 
@@ -61,7 +64,8 @@ class Node
     bool _image_new;
 
     // Classes called to detect some object in the image and then track it
-    std::map< int, std::pair< DetectorPtr, std::string > > _detectors;
+    // First string is the name of the parent node and second is the name of the detected object's node
+    std::map< int, std::pair< DetectorPtr, std::pair< std::string, std::string > > > _detectors;
     //std::unique_ptr< Tracker > _tracker;
     
     bool _debug_display;
@@ -76,8 +80,8 @@ class Node
     void initTracking( int id );
     
     // Publish the object position rt the camera to TF
-    void publish_pose_topic( const vpHomogeneousMatrix &cMo, const std::string &node_name, const ros::Time &timestamp );
-    void publish_pose_tf( const vpHomogeneousMatrix &cMo, const std::string &node_name, const ros::Time &timestamp );
+    void publish_pose_topic( const vpHomogeneousMatrix &cMo_visp, const std::string &parent_node_name, const std::string &node_name, const ros::Time &timestamp );
+    void publish_pose_tf( const vpHomogeneousMatrix &cMo_visp, const std::string &parent_node_name, const std::string &node_name, const ros::Time &timestamp );
 
     std::vector< ros::ServiceServer > _services;
     ros::Publisher _publisherVision;

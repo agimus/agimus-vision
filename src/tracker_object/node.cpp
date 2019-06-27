@@ -18,11 +18,15 @@
 #include <visp_bridge/camera.h>
 #include <visp_bridge/3dpose.h>
 
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+
 namespace agimus_vision {
 namespace tracker_object {
 
 Node::Node()
  : _node_handle{}
+ , _tf_buffer{}
+ , _tf_listener{_tf_buffer}
  , _queue_size{ 10 }
  , _image_new{ false }
  , _debug_display{ true }
@@ -40,7 +44,7 @@ Node::Node()
     waitForImage();
 
     // TF node of the camera seeing the tags
-    _node_handle.param<std::string>("parentNode", _tf_parent_node, "/talos/rgbd_rgb_optical_frame");
+    _node_handle.param<std::string>("cameraNode", _tf_camera_node, "/talos/rgbd_rgb_optical_frame");
 
     // Display the tags seen by the camera
     _node_handle.param<bool>("debugDisplay", _debug_display, false);
@@ -137,15 +141,18 @@ void Node::spin()
 
             for( auto &detector : _detectors )
             {   
-                if( detector.second.first->detect() )
+                auto& detector_ptr = detector.second.first;
+                auto& node_names = detector.second.second;
+
+                if( detector_ptr->detect() )
                 {
                     if( _broadcast_tf )
-                        publish_pose_tf( detector.second.first->getLastCMO(), detector.second.second, timestamp );
+                        publish_pose_tf( detector_ptr->getLastCMO(), node_names.first, node_names.second, timestamp );
                     if( _broadcast_topic )
-                        publish_pose_topic( detector.second.first->getLastCMO(), detector.second.second, timestamp );
+                        publish_pose_topic( detector_ptr->getLastCMO(), node_names.first, node_names.second, timestamp );
             
                     if( _debug_display )
-                        detector.second.first->drawDebug( _image );
+                        detector_ptr->drawDebug( _image );
                 }
             }
         }
@@ -169,7 +176,7 @@ bool Node::addAprilTagService( agimus_vision::AddAprilTagService::Request  &req,
 
     _detectors.emplace( req.id, std::make_pair(
           DetectorPtr(new DetectorAprilTag( _cam_parameters, req.id, req.size_mm / 1000.0 )),
-          req.node_name )
+          std::make_pair( req.parent_node_name, req.node_name ))
         );
     res.success = true;
     return true;
@@ -187,40 +194,61 @@ bool Node::setChessboardService( agimus_vision::SetChessboardService::Request  &
 
     _detectors.emplace( id, std::make_pair(
           DetectorPtr(new DetectorChessboard( _cam_parameters, req.width, req.height, req.size_mm / 1000.0)),
-          req.node_name )
+          std::make_pair( req.parent_node_name, req.node_name ) )
         );
     res.success = true;
     return true;
 }
 
-void Node::publish_pose_tf( const vpHomogeneousMatrix &cMo, const std::string &node_name, const ros::Time &timestamp )
+void Node::publish_pose_tf( const vpHomogeneousMatrix &cMo_visp, const std::string &parent_node_name, const std::string &node_name, const ros::Time &timestamp )
 {
     static tf2_ros::TransformBroadcaster broadcaster;
     
     // Visp -> TF
-    auto transform = visp_bridge::toGeometryMsgsTransform( cMo );
-    geometry_msgs::TransformStamped transform_stamped{};
-    transform_stamped.header.frame_id = _tf_parent_node;
-    transform_stamped.child_frame_id = node_name + _broadcast_tf_postfix;
-    transform_stamped.header.stamp = timestamp;
-    transform_stamped.transform = transform;
-
-    broadcaster.sendTransform( transform_stamped );
+    auto cMo_msg = visp_bridge::toGeometryMsgsTransform( cMo_visp );
+    tf2::Transform cMo;
+    tf2::convert( cMo_msg, cMo );
+    
+    auto pMc_msg = _tf_buffer.lookupTransform(_tf_camera_node, parent_node_name, ros::Time(0)).transform;
+    tf2::Transform pMc;
+    tf2::convert( pMc_msg, pMc );
+    
+    tf2::Transform pMo = pMc * cMo;
+    
+    geometry_msgs::Transform pMo_msg_transform;
+    tf2::convert( pMo, pMo_msg_transform );
+    geometry_msgs::TransformStamped pMo_msg;
+    pMo_msg.transform = pMo_msg_transform;
+    pMo_msg.child_frame_id = node_name + _broadcast_tf_postfix;
+    pMo_msg.header.frame_id = parent_node_name;
+    pMo_msg.header.stamp = timestamp;
+    
+    broadcaster.sendTransform( pMo_msg );
 }
 
 
-void Node::publish_pose_topic( const vpHomogeneousMatrix &cMo, const std::string &node_name, const ros::Time &timestamp )
+void Node::publish_pose_topic( const vpHomogeneousMatrix &cMo_visp, const std::string &parent_node_name, const std::string &node_name, const ros::Time &timestamp )
 {
     // Visp -> TF
-    auto transform = visp_bridge::toGeometryMsgsTransform( cMo );
-    geometry_msgs::TransformStamped transform_stamped{};
+    auto cMo_msg = visp_bridge::toGeometryMsgsTransform( cMo_visp );
+    tf2::Transform cMo;
+    tf2::convert( cMo_msg, cMo );
     
-    transform_stamped.header.frame_id = _tf_parent_node;
-    transform_stamped.child_frame_id = node_name;
-    transform_stamped.header.stamp = timestamp;
-    transform_stamped.transform = transform;
-
-    _publisherVision.publish( transform_stamped );
+    auto pMc_msg = _tf_buffer.lookupTransform(_tf_camera_node, parent_node_name, ros::Time(0)).transform;
+    tf2::Transform pMc;
+    tf2::convert( pMc_msg, pMc );
+    
+    tf2::Transform pMo = pMc * cMo;
+    
+    geometry_msgs::Transform pMo_msg_transform;
+    tf2::convert( pMo, pMo_msg_transform );
+    geometry_msgs::TransformStamped pMo_msg;
+    pMo_msg.transform = pMo_msg_transform;
+    pMo_msg.child_frame_id = node_name + _broadcast_tf_postfix;
+    pMo_msg.header.frame_id = parent_node_name;
+    pMo_msg.header.stamp = timestamp;
+    
+    _publisherVision.publish( pMo_msg );
 }
 
 }
