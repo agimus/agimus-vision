@@ -44,7 +44,7 @@ Node::Node()
     waitForImage();
 
     // TF node of the camera seeing the tags
-    _node_handle.param<std::string>("cameraNode", _tf_camera_node, "/talos/rgbd_rgb_optical_frame");
+    _node_handle.param<std::string>("cameraNode", _tf_camera_node, "rgbd_rgb_optical_frame");
 
     // Display the tags seen by the camera
     _node_handle.param<bool>("debugDisplay", _debug_display, false);
@@ -210,7 +210,7 @@ void Node::publish_pose_tf( const vpHomogeneousMatrix &cMo_visp, const std::stri
     tf2::Transform cMo;
     tf2::convert( cMo_msg, cMo );
     
-    auto pMc_msg = _tf_buffer.lookupTransform(_tf_camera_node, parent_node_name, ros::Time(0)).transform;
+    auto pMc_msg = _tf_buffer.lookupTransform(parent_node_name, _tf_camera_node, ros::Time(0)).transform;
     tf2::Transform pMc;
     tf2::convert( pMc_msg, pMc );
     
@@ -235,7 +235,7 @@ void Node::publish_pose_topic( const vpHomogeneousMatrix &cMo_visp, const std::s
     tf2::Transform cMo;
     tf2::convert( cMo_msg, cMo );
     
-    auto pMc_msg = _tf_buffer.lookupTransform(_tf_camera_node, parent_node_name, ros::Time(0)).transform;
+    auto pMc_msg = _tf_buffer.lookupTransform(parent_node_name, _tf_camera_node, ros::Time(0)).transform;
     tf2::Transform pMc;
     tf2::convert( pMc_msg, pMc );
     
