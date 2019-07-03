@@ -71,7 +71,11 @@ install(DIRECTORY launch
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )
 
-catkin_install_python(PROGRAMS scripts/simulate.py
+install(DIRECTORY data
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+)
+
+catkin_install_python(PROGRAMS scripts/simulate.py scripts/calibrate_real_joint.py scripts/publish_real_joint.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
 SETUP_PROJECT_FINALIZE()
