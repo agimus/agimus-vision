@@ -20,3 +20,6 @@ There are some ros parameters used to configure the node:
 * **/positionNode**: Name of the TF node corresponding to the box position (default: box).
 * **/positionParentNode**: Name of its parent node in the TF tree (default: rgbd\_rbg\_optical\_frame).wn
 
+### Generate DAE from AprilTag png files
+
+Run the command blender-2.78 --background --python scripts/april-tag-to-dae.py -- -h to get some help on how to do this.
