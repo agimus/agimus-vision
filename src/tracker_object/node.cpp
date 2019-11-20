@@ -2,6 +2,8 @@
 #include "agimus_vision/tracker_object/detector_apriltag.hpp"
 #include "agimus_vision/tracker_object/detector_chessboard.hpp"
 
+#include "agimus_vision/ImageDetectionResult.h"
+
 #include <algorithm>
 #include <functional>
 #include <iostream>
@@ -77,6 +79,7 @@ Node::Node()
     }
 
     _publisherVision = _node_handle.advertise< geometry_msgs::TransformStamped >( "/agimus/vision/tags", 100 );
+    _detection_publisher = _node_handle.advertise< agimus_vision::ImageDetectionResult >( "/agimus/vision/detection", 100 );
 }
 
 void Node::waitForImage()
@@ -148,6 +151,9 @@ void Node::spin()
 
         if( !_detectors.empty() && (_detectors.begin())->second.first->analyseImage( _gray_image ) )
         {
+            agimus_vision::ImageDetectionResult result;
+            result.header = _image_header;
+
             auto timestamp = ros::Time::now();
 
             for( auto &detector : _detectors )
@@ -157,6 +163,13 @@ void Node::spin()
 
                 if( detector_ptr->detect() )
                 {
+                    result.ids      .push_back (detector_ptr->id());
+                    result.residuals.push_back (detector_ptr->error());
+                    result.poses    .push_back (
+                        visp_bridge::toGeometryMsgsTransform(
+                          detector_ptr->getLastCMO()
+                          ));
+
                     if( _broadcast_tf )
                         publish_pose_tf( detector_ptr->getLastCMO(), node_names.first, node_names.second, timestamp );
                     if( _broadcast_topic )
@@ -166,6 +179,8 @@ void Node::spin()
                         detector_ptr->drawDebug( _image );
                 }
             }
+            if (!result.ids.empty())
+              _detection_publisher.publish(result);
         }
 
         if( _debug_display )

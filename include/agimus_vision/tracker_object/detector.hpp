@@ -31,6 +31,8 @@ protected:
 
 public:
     Detector( const vpCameraParameters &cam_parameters );
+
+    virtual size_t id() const = 0;
     
     virtual bool analyseImage( const vpImage< unsigned char > &gray_image );
 

@@ -26,6 +26,11 @@ public:
 
     void drawDebug( vpImage< vpRGBa > &image ) const;
 
+    size_t id() const
+    {
+      return _tag_id;
+    }
+
     static vpDetectorAprilTag Apriltag_detector;
 };
 

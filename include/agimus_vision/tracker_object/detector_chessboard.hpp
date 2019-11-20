@@ -23,6 +23,11 @@ public:
     DetectorChessboard( const vpCameraParameters &cam_parameters, const int chessboard_nb_corners_w, 
                         const int chessboard_nb_corners_h, const double chessboard_square_size_meters );
 
+    size_t id() const
+    {
+      return 0;
+    }
+
     bool analyseImage( const vpImage< unsigned char > &gray_image );
 
     bool detect();

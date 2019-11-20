@@ -82,6 +82,7 @@ class Node
 
     std::vector< ros::ServiceServer > _services;
     ros::Publisher _publisherVision;
+    ros::Publisher _detection_publisher;
 
 public:
     Node();

@@ -37,6 +37,11 @@ find_package(OpenCV REQUIRED)
 
 ADD_REQUIRED_DEPENDENCY(visp)
 
+add_message_files(
+  FILES
+  ImageDetectionResult.msg
+)
+
 add_service_files(
   FILES
   AddAprilTagService.srv
@@ -46,6 +51,7 @@ add_service_files(
 generate_messages(
   DEPENDENCIES
   std_msgs
+  geometry_msgs
 )
 
 
