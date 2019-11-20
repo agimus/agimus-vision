@@ -46,11 +46,6 @@ generate_messages(
 
 catkin_package()
 
-include_directories(
-  ${catkin_INCLUDE_DIRS}
-  ${OPENCV_INCLUDE_DIRS}
-)
-
 add_subdirectory(src/tracker_object)
 ##add_subdirectory(src/extrinsic_calibration)
 
