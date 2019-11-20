@@ -154,7 +154,7 @@ void Node::spin()
             agimus_vision::ImageDetectionResult result;
             result.header = _image_header;
 
-            auto timestamp = ros::Time::now();
+            auto timestamp = _image_header.stamp;
 
             for( auto &detector : _detectors )
             {   
@@ -236,7 +236,7 @@ void Node::publish_pose_tf( const vpHomogeneousMatrix &cMo_visp, const std::stri
     tf2::Transform cMo;
     tf2::convert( cMo_msg, cMo );
     
-    auto pMc_msg = _tf_buffer.lookupTransform(parent_node_name, _tf_camera_node, ros::Time(0)).transform;
+    auto pMc_msg = _tf_buffer.lookupTransform(parent_node_name, _tf_camera_node, timestamp).transform;
     tf2::Transform pMc;
     tf2::convert( pMc_msg, pMc );
     
@@ -261,7 +261,7 @@ void Node::publish_pose_topic( const vpHomogeneousMatrix &cMo_visp, const std::s
     tf2::Transform cMo;
     tf2::convert( cMo_msg, cMo );
     
-    auto pMc_msg = _tf_buffer.lookupTransform(parent_node_name, _tf_camera_node, ros::Time(0)).transform;
+    auto pMc_msg = _tf_buffer.lookupTransform(parent_node_name, _tf_camera_node, timestamp).transform;
     tf2::Transform pMc;
     tf2::convert( pMc_msg, pMc );
     
