@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 2.8.3)
 SET(PROJECT_NAME agimus_vision)
 SET(PROJECT_DESCRIPTION "Computer vision for Agimus")
 SET(PROJECT_URL https://github.com/agimus/agimus-vision)
+SET(PROJECT_VERSION 0.1.0)
 
 SET(CXX_DISABLE_WERROR TRUE)
 
