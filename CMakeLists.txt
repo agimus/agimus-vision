@@ -1,18 +1,22 @@
 cmake_minimum_required(VERSION 2.8.3)
 
-INCLUDE(cmake/base.cmake)
-
-SET(CXX_DISABLE_WERROR TRUE)
-
-# These variables have to be defined before running SETUP_PROJECT
 SET(PROJECT_NAME agimus_vision)
 SET(PROJECT_DESCRIPTION "Computer vision for Agimus")
 SET(PROJECT_URL https://github.com/agimus/agimus-vision)
 
-SETUP_PROJECT()
+SET(CXX_DISABLE_WERROR TRUE)
+
+INCLUDE(cmake/base.cmake)
+INCLUDE(cmake/cxx11.cmake)
+
+COMPUTE_PROJECT_ARGS(PROJECT_ARGS LANGUAGES CXX)
+PROJECT(${PROJECT_NAME} ${PROJECT_ARGS})
 
 ## Compile as C++11, supported in ROS Kinetic and newer
-add_compile_options(-std=c++11)
+CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
+if(NOT COMPILER_SUPPORTS_CXX11)
+  message(FATAL "This project needs support for C++ 11.")
+endif()
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp
@@ -73,5 +77,3 @@ install(DIRECTORY data
 
 catkin_install_python(PROGRAMS scripts/simulate.py scripts/calibrate_real_joint.py scripts/publish_real_joint.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
-
-SETUP_PROJECT_FINALIZE()

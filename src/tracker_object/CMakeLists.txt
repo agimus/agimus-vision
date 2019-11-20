@@ -1,5 +1,6 @@
 add_executable(${PROJECT_NAME}_tracker_object main.cpp node.cpp detector.cpp detector_apriltag.cpp detector_chessboard.cpp) 
 add_dependencies(${PROJECT_NAME}_tracker_object ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_compile_options(${PROJECT_NAME}_tracker_object PUBLIC -std=c++11)
 target_include_directories(${PROJECT_NAME}_tracker_object SYSTEM PUBLIC
   ${catkin_INCLUDE_DIRS}
   ${OPENCV_INCLUDE_DIRS}
@@ -10,8 +11,6 @@ target_link_libraries(${PROJECT_NAME}_tracker_object
   ${OpenCV_LIBS}
   zbar # Necessary when the detectors are not used via pointers.
 )
-
-message(${OpenCV_LIBS})
 
 set_target_properties(${PROJECT_NAME}_tracker_object PROPERTIES OUTPUT_NAME tracker_object PREFIX "")
 

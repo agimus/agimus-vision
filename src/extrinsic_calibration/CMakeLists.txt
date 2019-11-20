@@ -1,5 +1,9 @@
 add_executable(${PROJECT_NAME}_camera_calibration main.cpp node.cpp extrinsic_calibration.cpp)
 add_dependencies(${PROJECT_NAME}_camera_calibration ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_compile_options(${PROJECT_NAME}_camera_calibration -std=c++11)
+target_include_directories(${PROJECT_NAME}_camera_calibration SYSTEM PUBLIC
+  ${catkin_INCLUDE_DIRS}
+)
 target_link_libraries(${PROJECT_NAME}_camera_calibration
   ${catkin_LIBRARIES}
 )
