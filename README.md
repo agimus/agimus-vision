@@ -22,4 +22,15 @@ There are some ros parameters used to configure the node:
 
 ### Generate DAE from AprilTag png files
 
-Run the command blender-2.78 --background --python scripts/april-tag-to-dae.py -- -h to get some help on how to do this.
+Run the command `blender-2.78 --background --python scripts/april-tag-to-dae.py -- -h`
+to get some help on how to do this.
+
+The following bash script was used to generate some images.
+```bash
+ids="50 51 52 53"
+
+for id in ${ids}; do
+  blender-2.78 --background --verbose -10 --python scripts/april-tag-to-dae.py -- \
+    --cubesize 1. apriltag-imgs-master/tag36h11/tag36_11_000${id}.png ../gerard-bauzil/meshes/apriltag_36h11/tag36_11_000${id}.dae
+done
+```
