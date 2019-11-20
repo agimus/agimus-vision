@@ -34,14 +34,20 @@ Node::Node()
     // Get parameters for the node
     _node_handle.param<std::string>("imageTopic", _image_topic, "/camera/rgb/image_rect_color");
     _node_handle.param<std::string>("cameraInfoTopic", _camera_info_topic, "/camera/rgb/camera_info");
+
+    // Initialize camera parameters
+    ROS_INFO_STREAM("Wait for camera info message on " << _camera_info_topic);
+    sensor_msgs::CameraInfoConstPtr cam_info_msg =
+      ros::topic::waitForMessage <sensor_msgs::CameraInfo> (_camera_info_topic,
+          _node_handle);
+    if (!cam_info_msg) return;
+    cameraInfoCallback(cam_info_msg);
     
     // Use those parameters to create the camera 
-    _image_sub.reset(new message_filters::Subscriber<sensor_msgs::Image>{_node_handle, _image_topic, _queue_size}); 
-    _camera_info_sub.reset(new message_filters::Subscriber<sensor_msgs::CameraInfo>{_node_handle, _camera_info_topic, _queue_size});
-    _image_info_sync.reset(new message_filters::TimeSynchronizer<sensor_msgs::Image, sensor_msgs::CameraInfo>{*_image_sub, *_camera_info_sub, _queue_size*5});
-    _image_info_sync->registerCallback(std::bind(&Node::frameCallback, this, std::placeholders::_1, std::placeholders::_2));
-
-    waitForImage();
+    _image_sub = _node_handle.subscribe(_image_topic, _queue_size,
+        &Node::frameCallback, this);
+    _camera_info_sub = _node_handle.subscribe(_camera_info_topic, _queue_size,
+        &Node::cameraInfoCallback, this);
 
     // TF node of the camera seeing the tags
     _node_handle.param<std::string>("cameraNode", _tf_camera_node, "rgbd_rgb_optical_frame");
@@ -86,7 +92,13 @@ void Node::waitForImage()
     }
 }
 
-void Node::frameCallback(const sensor_msgs::ImageConstPtr& image, const sensor_msgs::CameraInfoConstPtr& camera_info)
+void Node::cameraInfoCallback(const sensor_msgs::CameraInfoConstPtr& camera_info)
+{
+    std::lock_guard<std::mutex> lock(_cam_param_lock);
+    _cam_parameters = visp_bridge::toVispCameraParameters(*camera_info);
+}
+
+void Node::frameCallback(const sensor_msgs::ImageConstPtr& image)
 {
     std::lock_guard<std::mutex> lock(_image_lock);
     _image_header = image->header;
@@ -110,7 +122,6 @@ void Node::frameCallback(const sensor_msgs::ImageConstPtr& image, const sensor_m
         }
 
     vpImageConvert::convert(_image, _gray_image);
-    _cam_parameters = visp_bridge::toVispCameraParameters(*camera_info);
 
     _image_new = true;
 }

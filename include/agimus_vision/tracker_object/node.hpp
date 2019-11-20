@@ -20,9 +20,6 @@
 #include <sensor_msgs/CameraInfo.h>
 #include <sensor_msgs/Image.h>
 
-#include <message_filters/subscriber.h>
-#include <message_filters/time_synchronizer.h>
-
 #include <visp3/core/vpImage.h>
 #include <visp3/core/vpCameraParameters.h>
 
@@ -44,9 +41,8 @@ class Node
     std::string _camera_info_topic;
     
     uint32_t _queue_size;
-    std::unique_ptr< message_filters::Subscriber<sensor_msgs::Image> > _image_sub;
-    std::unique_ptr< message_filters::Subscriber<sensor_msgs::CameraInfo> > _camera_info_sub;
-    std::unique_ptr< message_filters::TimeSynchronizer<sensor_msgs::Image, sensor_msgs::CameraInfo> > _image_info_sync;
+    ros::Subscriber _image_sub;
+    ros::Subscriber _camera_info_sub;
     tf2_ros::Buffer _tf_buffer;
     tf2_ros::TransformListener _tf_listener;
 
@@ -57,6 +53,7 @@ class Node
 
     // Images and parameters taken from the camera's topics
     std::mutex _image_lock;
+    std::mutex _cam_param_lock;
     vpCameraParameters _cam_parameters;
     std_msgs::Header _image_header;
     vpImage<vpRGBa> _image;
@@ -89,8 +86,11 @@ class Node
 public:
     Node();
 
+    /// Callback to update the camera information
+    void cameraInfoCallback(const sensor_msgs::CameraInfoConstPtr& camera_info);
+
     /// Callback to use the images
-    void frameCallback(const sensor_msgs::ImageConstPtr& image, const sensor_msgs::CameraInfoConstPtr& camera_info);
+    void frameCallback(const sensor_msgs::ImageConstPtr& image);
     
     /// Add an April tag
     /// \include srv/AddAprilTagService.srv
