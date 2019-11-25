@@ -27,10 +27,7 @@ def getPixel (image, i, j):
     """
     assert j < image.size[0] and j >= 0
     assert i < image.size[1] and i >= 0
-    #index = (j * image.size[0] + i) * 4
-    #TODO By trial and error, the correct formula is the following.
-    # I don't really know why.
-    index = (i * image.size[0] + (image.size[1]-1-j)) * 4
+    index = (j * image.size[0] + i) * 4
     return image.pixels[index:index+4]
 def isWhite (image, i, j):
     pixel = getPixel (image, i, j)
