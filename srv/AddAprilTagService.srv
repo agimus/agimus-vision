@@ -1,5 +1,6 @@
 int16 id
-float64 size_mm
+# The tag size in meters, not including the white border.
+float64 size
 string node_name
 string parent_node_name
 ---

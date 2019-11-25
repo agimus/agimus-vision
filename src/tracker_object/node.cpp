@@ -200,9 +200,9 @@ bool Node::addAprilTagService( agimus_vision::AddAprilTagService::Request  &req,
         return false;
     }
 
-    ROS_INFO_STREAM( "Id: " << req.id << " now being tracked." );
+    ROS_INFO_STREAM( "Id: " << req.id << '(' << req.size << "m) now being tracked." );
     _detectors.emplace( req.id, std::make_pair(
-          DetectorPtr(new DetectorAprilTag( _cam_parameters, req.id, req.size_mm / 1000.0 )),
+          DetectorPtr(new DetectorAprilTag( _cam_parameters, req.id, req.size )),
           std::make_pair( req.parent_node_name, req.node_name ))
         );
     res.success = true;
