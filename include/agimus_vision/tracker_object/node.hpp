@@ -86,10 +86,6 @@ class Node
     // Init the tracker with the AprilTag found previously
     void initTracking( int id );
     
-    // Publish the object position rt the camera to TF
-    void publish_pose_topic( const vpHomogeneousMatrix &cMo_visp, const std::string &parent_node_name, const std::string &node_name, const ros::Time &timestamp );
-    void publish_pose_tf( const vpHomogeneousMatrix &cMo_visp, const std::string &parent_node_name, const std::string &node_name, const ros::Time &timestamp );
-
     std::vector< ros::ServiceServer > _services;
     ros::Publisher _publisherVision;
     ros::Publisher _detection_publisher;

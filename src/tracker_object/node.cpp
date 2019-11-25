@@ -25,6 +25,35 @@
 namespace agimus_vision {
 namespace tracker_object {
 
+
+geometry_msgs::Transform getTransformAtTimeOrNewest (
+    tf2_ros::Buffer& buf,
+    const std::string& parent,
+    const std::string& node,
+    const ros::Time& stamp,
+    bool& ok)
+{
+  static ros::Time origin(0);
+  try {
+    ok=true;
+    return buf.lookupTransform(parent, node, stamp ).transform;
+  } catch (const tf2::LookupException& e) {
+    ROS_WARN(e.what());
+    ok=false;
+    return geometry_msgs::Transform();
+  } catch (const tf2::ExtrapolationException&) {
+    ok=true;
+    return buf.lookupTransform(parent, node, origin).transform;
+  }
+}
+
+using tf2::convert;
+
+void convert (const vpHomogeneousMatrix &Min, tf2::Transform& out)
+{
+  tf2::convert(visp_bridge::toGeometryMsgsTransform(Min), out);
+}
+
 Node::Node()
  : _node_handle{}
  , _queue_size{ 10 }
@@ -131,6 +160,8 @@ void Node::frameCallback(const sensor_msgs::ImageConstPtr& image)
 
 void Node::spin()
 {
+    static tf2_ros::TransformBroadcaster broadcaster;
+
     std::unique_ptr< vpDisplayX > disp{ nullptr };
 
     waitForImage();
@@ -157,27 +188,44 @@ void Node::spin()
             auto timestamp = _image_header.stamp;
 
             for( auto &detector : _detectors )
-            {   
+            {
                 const DetectorPtr& detector_ptr = detector.second.detector;
                 const std::string& parent_name = detector.second.parent_name;
                 const std::string& object_name = detector.second.object_name;
 
                 if( detector_ptr->detect() )
                 {
-                    result.ids      .push_back (detector_ptr->id());
-                    result.residuals.push_back (detector_ptr->error());
-                    result.poses    .push_back (
-                        visp_bridge::toGeometryMsgsTransform(
-                          detector_ptr->getLastCMO()
-                          ));
+                  // c: camera
+                  // o: object
+                  // p: parent
+                  bool ok;
+                  tf2::Transform pMc;
+                  convert(getTransformAtTimeOrNewest
+                      (_tf_buffer, parent_name, _tf_camera_node, timestamp, ok),
+                      pMc);
+                  if (!ok) continue;
 
-                    if( _broadcast_tf )
-                        publish_pose_tf( detector_ptr->getLastCMO(), parent_name, object_name, timestamp );
-                    if( _broadcast_topic )
-                        publish_pose_topic( detector_ptr->getLastCMO(), parent_name, object_name, timestamp );
+                  tf2::Transform cMo;
+                  convert(detector_ptr->getLastCMO(), cMo);
+
+                  geometry_msgs::TransformStamped pMo_msg;
+                  tf2::convert(pMc * cMo, pMo_msg.transform);
+
+                  result.ids      .push_back (detector_ptr->id());
+                  result.residuals.push_back (detector_ptr->error());
+                  result.poses    .push_back (pMo_msg.transform);
+
+                  pMo_msg.child_frame_id = object_name + _broadcast_tf_postfix;
+                  pMo_msg.header.frame_id = parent_name;
+                  pMo_msg.header.stamp = timestamp;
+
+                  if( _broadcast_tf )
+                    broadcaster.sendTransform( pMo_msg );
+                  if( _broadcast_topic )
+                    _publisherVision.publish( pMo_msg );
             
-                    if( _debug_display )
-                        detector_ptr->drawDebug( _image );
+                  if( _debug_display )
+                    detector_ptr->drawDebug( _image );
                 }
             }
             if (!result.ids.empty())
@@ -229,57 +277,6 @@ bool Node::setChessboardService( agimus_vision::SetChessboardService::Request  &
         );
     res.success = true;
     return true;
-}
-
-void Node::publish_pose_tf( const vpHomogeneousMatrix &cMo_visp, const std::string &parent_node_name, const std::string &node_name, const ros::Time &timestamp )
-{
-    static tf2_ros::TransformBroadcaster broadcaster;
-    
-    // Visp -> TF
-    auto cMo_msg = visp_bridge::toGeometryMsgsTransform( cMo_visp );
-    tf2::Transform cMo;
-    tf2::convert( cMo_msg, cMo );
-    
-    auto pMc_msg = _tf_buffer.lookupTransform(parent_node_name, _tf_camera_node, timestamp).transform;
-    tf2::Transform pMc;
-    tf2::convert( pMc_msg, pMc );
-    
-    tf2::Transform pMo = pMc * cMo;
-    
-    geometry_msgs::Transform pMo_msg_transform;
-    tf2::convert( pMo, pMo_msg_transform );
-    geometry_msgs::TransformStamped pMo_msg;
-    pMo_msg.transform = pMo_msg_transform;
-    pMo_msg.child_frame_id = node_name + _broadcast_tf_postfix;
-    pMo_msg.header.frame_id = parent_node_name;
-    pMo_msg.header.stamp = timestamp;
-    
-    broadcaster.sendTransform( pMo_msg );
-}
-
-
-void Node::publish_pose_topic( const vpHomogeneousMatrix &cMo_visp, const std::string &parent_node_name, const std::string &node_name, const ros::Time &timestamp )
-{
-    // Visp -> TF
-    auto cMo_msg = visp_bridge::toGeometryMsgsTransform( cMo_visp );
-    tf2::Transform cMo;
-    tf2::convert( cMo_msg, cMo );
-    
-    auto pMc_msg = _tf_buffer.lookupTransform(parent_node_name, _tf_camera_node, timestamp).transform;
-    tf2::Transform pMc;
-    tf2::convert( pMc_msg, pMc );
-    
-    tf2::Transform pMo = pMc * cMo;
-    
-    geometry_msgs::Transform pMo_msg_transform;
-    tf2::convert( pMo, pMo_msg_transform );
-    geometry_msgs::TransformStamped pMo_msg;
-    pMo_msg.transform = pMo_msg_transform;
-    pMo_msg.child_frame_id = node_name + _broadcast_tf_postfix;
-    pMo_msg.header.frame_id = parent_node_name;
-    pMo_msg.header.stamp = timestamp;
-    
-    _publisherVision.publish( pMo_msg );
 }
 
 }
