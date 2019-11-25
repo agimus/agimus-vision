@@ -149,7 +149,7 @@ void Node::spin()
         if( _debug_display )
             vpDisplay::display(_image);
 
-        if( !_detectors.empty() && (_detectors.begin())->second.first->analyseImage( _gray_image ) )
+        if( !_detectors.empty() && (_detectors.begin())->second.detector->analyseImage( _gray_image ) )
         {
             agimus_vision::ImageDetectionResult result;
             result.header = _image_header;
@@ -158,8 +158,9 @@ void Node::spin()
 
             for( auto &detector : _detectors )
             {   
-                auto& detector_ptr = detector.second.first;
-                auto& node_names = detector.second.second;
+                const DetectorPtr& detector_ptr = detector.second.detector;
+                const std::string& parent_name = detector.second.parent_name;
+                const std::string& object_name = detector.second.object_name;
 
                 if( detector_ptr->detect() )
                 {
@@ -171,9 +172,9 @@ void Node::spin()
                           ));
 
                     if( _broadcast_tf )
-                        publish_pose_tf( detector_ptr->getLastCMO(), node_names.first, node_names.second, timestamp );
+                        publish_pose_tf( detector_ptr->getLastCMO(), parent_name, object_name, timestamp );
                     if( _broadcast_topic )
-                        publish_pose_topic( detector_ptr->getLastCMO(), node_names.first, node_names.second, timestamp );
+                        publish_pose_topic( detector_ptr->getLastCMO(), parent_name, object_name, timestamp );
             
                     if( _debug_display )
                         detector_ptr->drawDebug( _image );
@@ -201,9 +202,11 @@ bool Node::addAprilTagService( agimus_vision::AddAprilTagService::Request  &req,
     }
 
     ROS_INFO_STREAM( "Id: " << req.id << '(' << req.size << "m) now being tracked." );
-    _detectors.emplace( req.id, std::make_pair(
+    _detectors.emplace( req.id,
+        DetectorAndName (
           DetectorPtr(new DetectorAprilTag( _cam_parameters, req.id, req.size )),
-          std::make_pair( req.parent_node_name, req.node_name ))
+          req.parent_node_name,
+          req.node_name )
         );
     res.success = true;
     return true;
@@ -219,9 +222,10 @@ bool Node::setChessboardService( agimus_vision::SetChessboardService::Request  &
         ROS_INFO_STREAM( "Erasing previous chessboard." );
     }
 
-    _detectors.emplace( id, std::make_pair(
+    _detectors.emplace( id, DetectorAndName (
           DetectorPtr(new DetectorChessboard( _cam_parameters, req.width, req.height, req.size_mm / 1000.0)),
-          std::make_pair( req.parent_node_name, req.node_name ) )
+          req.parent_node_name,
+          req.node_name )
         );
     res.success = true;
     return true;

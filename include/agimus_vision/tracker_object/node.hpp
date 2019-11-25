@@ -61,8 +61,18 @@ class Node
     bool _image_new;
 
     // Classes called to detect some object in the image and then track it
-    // First string is the name of the parent node and second is the name of the detected object's node
-    std::map< int, std::pair< DetectorPtr, std::pair< std::string, std::string > > > _detectors;
+    struct DetectorAndName {
+      DetectorPtr detector;
+      /// Name of the parent node
+      std::string parent_name;
+      /// Name of the detected object's node
+      std::string object_name;
+
+      DetectorAndName (const DetectorPtr& d, const std::string& pn, const std::string& on)
+        : detector(d), parent_name(pn), object_name(on)
+      {}
+    };
+    std::map< int, DetectorAndName > _detectors;
     //std::unique_ptr< Tracker > _tracker;
     
     bool _debug_display;
