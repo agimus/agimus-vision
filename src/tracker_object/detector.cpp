@@ -1,7 +1,10 @@
 #include "agimus_vision/tracker_object/detector.hpp"
 
 #include <visp3/vision/vpPose.h>
+#include <visp3/vision/vpPoseException.h>
 #include <visp3/core/vpPixelMeterConversion.h>
+
+#include <ros/console.h>
 
 namespace agimus_vision {
 namespace tracker_object {
@@ -24,19 +27,14 @@ bool Detector::detect()
 void Detector::drawDebug( vpImage< vpRGBa > &/*image*/ ) const
 {}
 
-vpHomogeneousMatrix Detector::getLastCMO() const
-{
-    return _cMo;
-}
-
 // -----
 // PRIVATE
 // -----
 
-void Detector::computePose()
+bool Detector::computePose()
 {
     if( _state == no_object )
-        return;
+        return false;
 
     vpPose pose{};
     std::vector< vpPoint > points{ compute3DPoints() };
@@ -56,18 +54,49 @@ void Detector::computePose()
     if( _state == newly_acquired_object )
     {
         vpHomogeneousMatrix cMo_dem{}, cMo_lag{};
+ 
+        enum { DEM_OK = 1, LAG_OK = 2 };
+        short status = 0;
+        double res_cMo_dem = -1, res_cMo_lag = -1;
+        try {
+          pose.computePose( vpPose::DEMENTHON, cMo_dem );
+          res_cMo_dem = pose.computeResidual( cMo_dem );
+          status = DEM_OK;
+        } catch (const vpPoseException& exc) {
+          ROS_WARN_STREAM("Could not apply DEMENTHON: " << exc.what());
+        }
 
-        pose.computePose( vpPose::DEMENTHON, cMo_dem );
-        pose.computePose( vpPose::LAGRANGE, cMo_lag );
+        try {
+          pose.computePose( vpPose:: LAGRANGE, cMo_lag );
+          res_cMo_lag = pose.computeResidual( cMo_lag );
+          status |= LAG_OK;
+        } catch (const vpPoseException& exc) {
+          ROS_WARN_STREAM("Could not apply LAGRANGE: " << exc.what());
+        }
 
-        if( pose.computeResidual( cMo_dem ) < pose.computeResidual( cMo_lag ) )
+        bool dem_over_lag;
+        switch (status) {
+          case 0              : return false;
+          case DEM_OK         : dem_over_lag = true                     ; break;
+          case LAG_OK         : dem_over_lag = false                    ; break;
+          case DEM_OK | LAG_OK: dem_over_lag = res_cMo_dem < res_cMo_lag; break;
+        }
+        if( dem_over_lag ) {
+            assert(res_cMo_dem >= 0);
             _cMo = cMo_dem;
-        else
+            _error = res_cMo_dem;
+        } else {
+            assert(res_cMo_lag >= 0);
             _cMo = cMo_lag;
+            _error = res_cMo_lag;
+        }
+        return true;
     }
  
     pose.computePose( vpPose::VIRTUAL_VS, _cMo );
+    _error = pose.computeResidual( _cMo );
     _state = already_acquired_object;
+    return true;
 }
     
 std::vector< vpPoint > Detector::compute3DPoints() const

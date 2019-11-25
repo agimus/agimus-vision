@@ -43,8 +43,7 @@ bool DetectorAprilTag::detect()
             if( _state == no_object )
                 _state = newly_acquired_object;
 
-            computePose();
-            return true;
+            return computePose();
         }
     }
 

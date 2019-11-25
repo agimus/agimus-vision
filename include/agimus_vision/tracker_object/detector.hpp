@@ -24,8 +24,9 @@ protected:
 
     vpHomogeneousMatrix _cMo;
 
+    double _error;
 
-    void computePose();
+    bool computePose();
 
     virtual std::vector< vpPoint > compute3DPoints() const;
 
@@ -40,7 +41,15 @@ public:
 
     virtual void drawDebug( vpImage< vpRGBa > &image ) const;
 
-    vpHomogeneousMatrix getLastCMO() const;
+    vpHomogeneousMatrix getLastCMO() const
+    {
+      return _cMo;
+    }
+
+    double error() const
+    {
+      return _error;
+    }
 };
 
 typedef std::shared_ptr<Detector> DetectorPtr;
