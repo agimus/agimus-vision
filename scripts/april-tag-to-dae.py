@@ -1,7 +1,7 @@
 import bpy, argparse, sys
 
 parser = argparse.ArgumentParser(description='Generate COLLADA files from AprilTag.')
-parser.add_argument('--cubesize', type=float, default=1., help='the size of the square')
+parser.add_argument('--cubesize', type=float, default=1., help='the size of the square in meters (excluding the white border)')
 parser.add_argument('input_tag', type=str, help='the input AprilTag')
 parser.add_argument('output_dae', type=str, help='the output DAE file')
 
@@ -34,7 +34,8 @@ def isWhite (image, i, j):
     return pixel[0] > 0.5
 
 imagesize = image.size[0]
-pixelsize = cubesize / imagesize
+cubesize_wb = cubesize * imagesize / (imagesize - 2)
+pixelsize = cubesize_wb / imagesize
 
 blackmat = bpy.data.materials.new(name="black")
 blackmat.diffuse_color = (0,0,0)
@@ -44,9 +45,9 @@ whitemat.diffuse_color = (1,1,1)
 whitemat.specular_color = (1,1,1)
 
 for i in range(imagesize):
-    x = -cubesize/2 + (i+.5) * pixelsize
+    x = -cubesize_wb/2 + (i+.5) * pixelsize
     for j in range(imagesize):
-        y = -cubesize/2 + (j+.5) * pixelsize
+        y = -cubesize_wb/2 + (j+.5) * pixelsize
         bpy.ops.mesh.primitive_plane_add (radius=pixelsize/2, location=(x,y,0))
         obj = bpy.context.object
         obj.name = 'pixel_{:0>2}_{:0>2}'.format(i,j)
