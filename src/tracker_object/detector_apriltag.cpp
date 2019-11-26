@@ -67,8 +67,10 @@ void DetectorAprilTag::drawDebug( vpImage< vpRGBa > &image ) const
     for( unsigned int i{ 0 } ; i < 4 ; ++i )
         vpDisplay::displayLine( image, _image_points[ i ], _image_points[ i == 3 ? 0 : i + 1 ], colors[ i ], 3 );
 
-    vpDisplay::displayFrame( image, _cMo, _cam_parameters, 0.1, vpColor::none );
+    vpDisplay::displayFrame( image, _cMo, _cam_parameters, _tag_size_meters * 2, vpColor::none );
 
+    // FIXME this should be fixed as the display is not correct
+    /*
     vpPoint a{ - _tag_size_meters / 2. - 0.022, - _tag_size_meters / 2. - 0.066, 0.0 }; a.project( _cMo );
     vpPoint b{ - _tag_size_meters / 2. - 0.022 + 0.05, - _tag_size_meters / 2. - 0.066, 0.0 }; b.project( _cMo ); 
     vpPoint c{ - _tag_size_meters / 2. - 0.022, - _tag_size_meters / 2. - 0.066 + 0.05, 0.0 }; c.project( _cMo ); 
@@ -83,6 +85,7 @@ void DetectorAprilTag::drawDebug( vpImage< vpRGBa > &image ) const
     vpDisplay::displayArrow( image, pointA, pointB, vpColor::red );
     vpDisplay::displayArrow( image, pointA, pointC, vpColor::green );
     vpDisplay::displayArrow( image, pointA, pointD, vpColor::blue );
+    */
 }
 
 std::vector< vpPoint > DetectorAprilTag::compute3DPoints() const
