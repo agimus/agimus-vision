@@ -23,6 +23,8 @@
 #include <visp3/core/vpImage.h>
 #include <visp3/core/vpCameraParameters.h>
 
+class vpDisplayX;
+
 namespace agimus_vision {
 namespace tracker_object {
 
@@ -75,7 +77,7 @@ class Node
     std::map< int, DetectorAndName > _detectors;
     //std::unique_ptr< Tracker > _tracker;
     
-    bool _debug_display;
+    std::unique_ptr <vpDisplayX> _debug_display;
     bool _broadcast_tf;
     bool _broadcast_topic;
 
@@ -93,11 +95,16 @@ class Node
 public:
     Node();
 
+    ~Node();
+
     /// Callback to update the camera information
     void cameraInfoCallback(const sensor_msgs::CameraInfoConstPtr& camera_info);
 
     /// Callback to use the images
     void frameCallback(const sensor_msgs::ImageConstPtr& image);
+
+    /// Process an image.
+    void imageProcessing ();
     
     /// Add an April tag
     /// \include srv/AddAprilTagService.srv
