@@ -60,7 +60,7 @@ Node::Node()
  , _tf_buffer{}
  , _tf_listener{_tf_buffer}
  , _image_new{ false }
- , _debug_display{ true }
+ , _debug_display{ nullptr }
 {
     // Get parameters for the node
     _node_handle.param<std::string>("imageTopic", _image_topic, "/camera/rgb/image_rect_color");
@@ -84,7 +84,8 @@ Node::Node()
     _node_handle.param<std::string>("cameraNode", _tf_camera_node, "rgbd_rgb_optical_frame");
 
     // Display the tags seen by the camera
-    _node_handle.param<bool>("debugDisplay", _debug_display, false);
+    if (_node_handle.param<bool>("debugDisplay", false))
+        _debug_display.reset( new vpDisplayX{} );
 
     // Broadcasting methods
     _node_handle.param<bool>("broadcastTf", _broadcast_tf, false);
@@ -110,6 +111,9 @@ Node::Node()
     _publisherVision = _node_handle.advertise< geometry_msgs::TransformStamped >( "/agimus/vision/tags", 100 );
     _detection_publisher = _node_handle.advertise< agimus_vision::ImageDetectionResult >( "/agimus/vision/detection", 100 );
 }
+
+Node::~Node()
+{}
 
 void Node::waitForImage()
 {
@@ -156,87 +160,83 @@ void Node::frameCallback(const sensor_msgs::ImageConstPtr& image)
     vpImageConvert::convert(_image, _gray_image);
 
     _image_new = true;
+
+    imageProcessing();
+}
+
+void Node::imageProcessing()
+{
+    static tf2_ros::TransformBroadcaster broadcaster;
+
+    if( _debug_display )
+    {
+      if ( !_debug_display->isInitialised())
+      {
+        _debug_display->init(_image);
+        vpDisplay::setTitle(_image, "Visual display");
+      }
+      vpDisplay::display(_image);
+    }
+
+    if( !_detectors.empty() && (_detectors.begin())->second.detector->analyseImage( _gray_image ) )
+    {
+      agimus_vision::ImageDetectionResult result;
+      result.header = _image_header;
+
+      auto timestamp = _image_header.stamp;
+
+      for( auto &detector : _detectors )
+      {
+        const DetectorPtr& detector_ptr = detector.second.detector;
+        const std::string& parent_name = detector.second.parent_name;
+        const std::string& object_name = detector.second.object_name;
+
+        if( detector_ptr->detect() )
+        {
+          // c: camera
+          // o: object
+          // p: parent
+          bool ok;
+          tf2::Transform pMc;
+          convert(getTransformAtTimeOrNewest
+              (_tf_buffer, parent_name, _tf_camera_node, timestamp, ok),
+              pMc);
+          if (!ok) continue;
+
+          tf2::Transform cMo;
+          convert(detector_ptr->getLastCMO(), cMo);
+
+          geometry_msgs::TransformStamped pMo_msg;
+          tf2::convert(pMc * cMo, pMo_msg.transform);
+
+          result.ids      .push_back (detector_ptr->id());
+          result.residuals.push_back (detector_ptr->error());
+          result.poses    .push_back (pMo_msg.transform);
+
+          pMo_msg.child_frame_id = object_name + _broadcast_tf_postfix;
+          pMo_msg.header.frame_id = parent_name;
+          pMo_msg.header.stamp = timestamp;
+
+          if( _broadcast_tf )
+            broadcaster.sendTransform( pMo_msg );
+          if( _broadcast_topic )
+            _publisherVision.publish( pMo_msg );
+
+          if( _debug_display )
+            detector_ptr->drawDebug( _image );
+        }
+      }
+      if (!result.ids.empty())
+        _detection_publisher.publish(result);
+    }
+
+    if( _debug_display )
+      vpDisplay::flush(_image);
 }
 
 void Node::spin()
 {
-    static tf2_ros::TransformBroadcaster broadcaster;
-
-    std::unique_ptr< vpDisplayX > disp{ nullptr };
-
-    waitForImage();
-    if( _debug_display )
-    {
-        disp.reset( new vpDisplayX{} );
-        std::lock_guard<std::mutex> lock(_image_lock);
-        disp->init(_image);
-        vpDisplay::setTitle(_image, "Visual display");
-    }
-
-    ros::Rate rate(30);
-    ROS_INFO_STREAM( "Node running." );
-    while(ros::ok())
-    {
-        if( _debug_display )
-            vpDisplay::display(_image);
-
-        if( !_detectors.empty() && (_detectors.begin())->second.detector->analyseImage( _gray_image ) )
-        {
-            agimus_vision::ImageDetectionResult result;
-            result.header = _image_header;
-
-            auto timestamp = _image_header.stamp;
-
-            for( auto &detector : _detectors )
-            {
-                const DetectorPtr& detector_ptr = detector.second.detector;
-                const std::string& parent_name = detector.second.parent_name;
-                const std::string& object_name = detector.second.object_name;
-
-                if( detector_ptr->detect() )
-                {
-                  // c: camera
-                  // o: object
-                  // p: parent
-                  bool ok;
-                  tf2::Transform pMc;
-                  convert(getTransformAtTimeOrNewest
-                      (_tf_buffer, parent_name, _tf_camera_node, timestamp, ok),
-                      pMc);
-                  if (!ok) continue;
-
-                  tf2::Transform cMo;
-                  convert(detector_ptr->getLastCMO(), cMo);
-
-                  geometry_msgs::TransformStamped pMo_msg;
-                  tf2::convert(pMc * cMo, pMo_msg.transform);
-
-                  result.ids      .push_back (detector_ptr->id());
-                  result.residuals.push_back (detector_ptr->error());
-                  result.poses    .push_back (pMo_msg.transform);
-
-                  pMo_msg.child_frame_id = object_name + _broadcast_tf_postfix;
-                  pMo_msg.header.frame_id = parent_name;
-                  pMo_msg.header.stamp = timestamp;
-
-                  if( _broadcast_tf )
-                    broadcaster.sendTransform( pMo_msg );
-                  if( _broadcast_topic )
-                    _publisherVision.publish( pMo_msg );
-            
-                  if( _debug_display )
-                    detector_ptr->drawDebug( _image );
-                }
-            }
-            if (!result.ids.empty())
-              _detection_publisher.publish(result);
-        }
-
-        if( _debug_display )
-            vpDisplay::flush(_image);
-        ros::spinOnce();
-        rate.sleep();
-    }
+    ros::spin();
 }
 
 bool Node::addAprilTagService( agimus_vision::AddAprilTagService::Request  &req,
@@ -250,11 +250,14 @@ bool Node::addAprilTagService( agimus_vision::AddAprilTagService::Request  &req,
     }
 
     ROS_INFO_STREAM( "Id: " << req.id << '(' << req.size << "m) now being tracked." );
+    DetectorPtr detector (new DetectorAprilTag( _cam_parameters, req.id, req.size ));
+
+
+    detector->residualThreshold ( _node_handle.param<double>("residualThreshold", 1e-4) );
+    detector->poseThreshold     ( _node_handle.param<double>("poseThreshold"    , 1e-3) );
+
     _detectors.emplace( req.id,
-        DetectorAndName (
-          DetectorPtr(new DetectorAprilTag( _cam_parameters, req.id, req.size )),
-          req.parent_node_name,
-          req.node_name )
+        DetectorAndName ( detector, req.parent_node_name, req.node_name )
         );
     res.success = true;
     return true;

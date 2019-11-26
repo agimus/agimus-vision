@@ -41,9 +41,15 @@ bool DetectorAprilTag::detect()
             _image_points = Apriltag_detector.getPolygon( i );
             
             if( _state == no_object )
-                _state = newly_acquired_object;
+              _state = newly_acquired_object;
+            else
+              _state = already_acquired_object;
 
-            return computePose();
+            if (computePose()) return true;
+
+            // Pose could not be computed.
+            _state = no_object;
+            return false;
         }
     }
 

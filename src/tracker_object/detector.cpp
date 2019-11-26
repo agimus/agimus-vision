@@ -2,6 +2,7 @@
 
 #include <visp3/vision/vpPose.h>
 #include <visp3/vision/vpPoseException.h>
+#include <visp3/core/vpExponentialMap.h>
 #include <visp3/core/vpPixelMeterConversion.h>
 
 #include <ros/console.h>
@@ -12,6 +13,8 @@ namespace tracker_object {
 Detector::Detector( const vpCameraParameters &cam_parameters )
   : _state{ no_object }
   , _cam_parameters{ cam_parameters }
+  , _residual_thr (1e-4)
+  , _pose_thr (1e-3)
 {}
 
 bool Detector::analyseImage( const vpImage< unsigned char > &/*gray_image*/ )
@@ -59,7 +62,7 @@ bool Detector::computePose()
         short status = 0;
         double res_cMo_dem = -1, res_cMo_lag = -1;
         try {
-          pose.computePose( vpPose::DEMENTHON, cMo_dem );
+          pose.computePose( vpPose::DEMENTHON_VIRTUAL_VS, cMo_dem );
           res_cMo_dem = pose.computeResidual( cMo_dem );
           status = DEM_OK;
         } catch (const vpPoseException& exc) {
@@ -67,7 +70,7 @@ bool Detector::computePose()
         }
 
         try {
-          pose.computePose( vpPose:: LAGRANGE, cMo_lag );
+          pose.computePose( vpPose:: LAGRANGE_VIRTUAL_VS, cMo_lag );
           res_cMo_lag = pose.computeResidual( cMo_lag );
           status |= LAG_OK;
         } catch (const vpPoseException& exc) {
@@ -76,10 +79,17 @@ bool Detector::computePose()
 
         bool dem_over_lag;
         switch (status) {
-          case 0              : return false;
-          case DEM_OK         : dem_over_lag = true                     ; break;
-          case LAG_OK         : dem_over_lag = false                    ; break;
-          case DEM_OK | LAG_OK: dem_over_lag = res_cMo_dem < res_cMo_lag; break;
+          case 0:
+            return false;
+          case DEM_OK:
+            dem_over_lag = true;
+            break;
+          case LAG_OK:
+            dem_over_lag = false;
+            break;
+          case DEM_OK | LAG_OK:
+            dem_over_lag = dementhon_over_lagrange (cMo_dem, res_cMo_dem, cMo_lag, res_cMo_lag);
+            break;
         }
         if( dem_over_lag ) {
             assert(res_cMo_dem >= 0);
@@ -93,12 +103,32 @@ bool Detector::computePose()
         return true;
     }
  
+    assert(_state == already_acquired_object);
     pose.computePose( vpPose::VIRTUAL_VS, _cMo );
     _error = pose.computeResidual( _cMo );
-    _state = already_acquired_object;
     return true;
 }
-    
+
+bool Detector::dementhon_over_lagrange (
+        const vpHomogeneousMatrix &cMo_dem, const double& res_cMo_dem,
+        const vpHomogeneousMatrix &cMo_lag, const double& res_cMo_lag)
+{
+  if (res_cMo_dem < _residual_thr && res_cMo_lag < _residual_thr)
+  {
+    vpColVector diff = vpExponentialMap::inverse (cMo_dem.inverse() * cMo_lag);
+    if (diff.euclideanNorm() > _pose_thr)
+      ROS_WARN_STREAM_THROTTLE(1, "The computation of pose of id " << id() <<
+          " is ambiguous.\n"
+          "Lagrange residual: " << res_cMo_lag << "\n"
+          "Dementhon residual: " << res_cMo_dem << "\n"
+          "Transform difference: " << diff.t());
+    // TODO Always prefer Lagrange ? (from source code, it seems it has no ambiguities...)
+    // return false;
+    return res_cMo_dem < res_cMo_lag;
+  } else
+    return res_cMo_dem < res_cMo_lag;
+}
+
 std::vector< vpPoint > Detector::compute3DPoints() const
 {
     return std::vector< vpPoint >{};
