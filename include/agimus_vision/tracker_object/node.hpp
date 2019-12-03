@@ -16,6 +16,7 @@
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
 
+#include <std_srvs/Trigger.h>
 #include <geometry_msgs/TransformStamped.h>
 #include <sensor_msgs/CameraInfo.h>
 #include <sensor_msgs/Image.h>
@@ -110,12 +111,16 @@ public:
     /// \include srv/AddAprilTagService.srv
     bool addAprilTagService( agimus_vision::AddAprilTagService::Request  &req,
                              agimus_vision::AddAprilTagService::Response &res );
-    
+
     /// Setup detection of a chessboard
     /// \include srv/SetChessboardService.srv
     bool setChessboardService( agimus_vision::SetChessboardService::Request  &req,
                                agimus_vision::SetChessboardService::Response &res );
 
+    /// Reset the tag poses
+    bool resetTagPosesService( std_srvs::Trigger::Request  &req,
+                               std_srvs::Trigger::Response &res );
+    
     void spin();
 };
 
