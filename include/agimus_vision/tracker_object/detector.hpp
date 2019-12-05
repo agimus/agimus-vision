@@ -78,6 +78,11 @@ public:
     {
       _pose_thr = thr;
     }
+
+    void resetState()
+    {
+      _state = no_object;
+    }
 };
 
 typedef std::shared_ptr<Detector> DetectorPtr;

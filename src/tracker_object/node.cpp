@@ -97,6 +97,8 @@ Node::Node()
     _node_handle.param<std::string>( "objectType", object_type, "apriltag" );
     std::for_each( object_type.begin(), object_type.end(), [](char &c){ c = (char)::tolower( c ); } );
 
+    _services.push_back( _node_handle.advertiseService( "reset_tag_poses", &Node::resetTagPosesService, this ) );
+
     if( object_type == "apriltag" )
     {
         DetectorAprilTag::Apriltag_detector.setAprilTagPoseEstimationMethod( vpDetectorAprilTag::vpPoseEstimationMethod::BEST_RESIDUAL_VIRTUAL_VS );
@@ -278,6 +280,16 @@ bool Node::setChessboardService( agimus_vision::SetChessboardService::Request  &
           req.parent_node_name,
           req.node_name )
         );
+    res.success = true;
+    return true;
+}
+
+bool Node::resetTagPosesService( std_srvs::Trigger::Request  &,
+                                 std_srvs::Trigger::Response &res )
+{
+    std::lock_guard<std::mutex> lock(_image_lock);
+    for( auto &detector : _detectors )
+      detector.second.detector->resetState();
     res.success = true;
     return true;
 }
