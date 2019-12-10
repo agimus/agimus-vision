@@ -81,7 +81,7 @@ Node::Node()
         &Node::cameraInfoCallback, this);
 
     // TF node of the camera seeing the tags
-    _node_handle.param<std::string>("cameraNode", _tf_camera_node, "rgbd_rgb_optical_frame");
+    _node_handle.param<std::string>("cameraFrame", _tf_camera_node, "rgbd_rgb_optical_frame");
 
     // Display the tags seen by the camera
     if (_node_handle.param<bool>("debugDisplay", false))
@@ -208,12 +208,14 @@ void Node::imageProcessing()
           tf2::Transform cMo;
           convert(detector_ptr->getLastCMO(), cMo);
 
+          geometry_msgs::Transform cMo_msg;
           geometry_msgs::TransformStamped pMo_msg;
+          tf2::convert(cMo, cMo_msg);
           tf2::convert(pMc * cMo, pMo_msg.transform);
 
           result.ids      .push_back (detector_ptr->id());
           result.residuals.push_back (detector_ptr->error());
-          result.poses    .push_back (pMo_msg.transform);
+          result.poses    .push_back (cMo_msg);
 
           pMo_msg.child_frame_id = object_name + _broadcast_tf_postfix;
           pMo_msg.header.frame_id = parent_name;
