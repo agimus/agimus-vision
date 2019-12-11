@@ -37,13 +37,13 @@ geometry_msgs::Transform getTransformAtTimeOrNewest (
   try {
     ok=true;
     return buf.lookupTransform(parent, node, stamp ).transform;
-  } catch (const tf2::LookupException& e) {
-    ROS_WARN(e.what());
-    ok=false;
-    return geometry_msgs::Transform();
   } catch (const tf2::ExtrapolationException&) {
     ok=true;
     return buf.lookupTransform(parent, node, origin).transform;
+  } catch (const tf2::TransformException& e) {
+    ROS_WARN(e.what());
+    ok=false;
+    return geometry_msgs::Transform();
   }
 }
 
