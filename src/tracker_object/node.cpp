@@ -198,6 +198,16 @@ void Node::imageProcessing()
           // c: camera
           // o: object
           // p: parent
+          tf2::Transform cMo;
+          convert(detector_ptr->getLastCMO(), cMo);
+
+          geometry_msgs::Transform cMo_msg;
+          tf2::convert(cMo, cMo_msg);
+
+          result.ids      .push_back (detector_ptr->id());
+          result.residuals.push_back (detector_ptr->error());
+          result.poses    .push_back (cMo_msg);
+
           bool ok;
           tf2::Transform pMc;
           convert(getTransformAtTimeOrNewest
@@ -205,26 +215,18 @@ void Node::imageProcessing()
               pMc);
           if (!ok) continue;
 
-          tf2::Transform cMo;
-          convert(detector_ptr->getLastCMO(), cMo);
-
-          geometry_msgs::Transform cMo_msg;
           geometry_msgs::TransformStamped pMo_msg;
-          tf2::convert(cMo, cMo_msg);
           tf2::convert(pMc * cMo, pMo_msg.transform);
 
-          result.ids      .push_back (detector_ptr->id());
-          result.residuals.push_back (detector_ptr->error());
-          result.poses    .push_back (cMo_msg);
-
-          pMo_msg.child_frame_id = object_name + _broadcast_tf_postfix;
+          pMo_msg.child_frame_id = object_name;
           pMo_msg.header.frame_id = parent_name;
           pMo_msg.header.stamp = timestamp;
 
-          if( _broadcast_tf )
-            broadcaster.sendTransform( pMo_msg );
           if( _broadcast_topic )
             _publisherVision.publish( pMo_msg );
+          pMo_msg.child_frame_id += _broadcast_tf_postfix;
+          if( _broadcast_tf )
+            broadcaster.sendTransform( pMo_msg );
 
           if( _debug_display )
             detector_ptr->drawDebug( _image );
