@@ -56,7 +56,6 @@ void convert (const vpHomogeneousMatrix &Min, tf2::Transform& out)
 
 Node::Node()
  : _node_handle{}
- , _queue_size{ 10 }
  , _tf_buffer{}
  , _tf_listener{_tf_buffer}
  , _image_new{ false }

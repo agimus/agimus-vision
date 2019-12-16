@@ -43,7 +43,6 @@ class Node
     std::string _image_topic;
     std::string _camera_info_topic;
     
-    uint32_t _queue_size;
     ros::Subscriber _image_sub;
     ros::Subscriber _camera_info_sub;
     tf2_ros::Buffer _tf_buffer;
