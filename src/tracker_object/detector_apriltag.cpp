@@ -16,7 +16,9 @@ DetectorAprilTag::DetectorAprilTag( const vpCameraParameters &cam_parameters, co
   : Detector( cam_parameters )
   , _tag_id{ tag_id }
   , _tag_size_meters{ tag_size_meters }
-{}
+{
+    Apriltag_detector.setAprilTagNbThreads(4);
+}
 
 bool DetectorAprilTag::analyseImage( const vpImage< unsigned char > &gray_image )
 {
