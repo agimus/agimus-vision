@@ -138,29 +138,19 @@ void Node::cameraInfoCallback(const sensor_msgs::CameraInfoConstPtr& camera_info
 
 void Node::frameCallback(const sensor_msgs::ImageConstPtr& image)
 {
-    std::lock_guard<std::mutex> lock(_image_lock);
+    std::unique_lock<std::mutex> lock(_image_lock, std::try_to_lock);
+    if(!lock.owns_lock())
+      return;
+
     _image_header = image->header;
     
-    _image = vpImage<vpRGBa>{ image->height, image->width };
-    for(unsigned int i{ 0 } ; i < _image.getHeight() ; ++i )
-        for(unsigned int j{ 0 } ; j < _image.getWidth() ; ++j)
-        {
-            if(image->encoding == sensor_msgs::image_encodings::MONO8)
-                _image[i][j] = vpRGBa{image->data[i * image->step + j], image->data[i * image->step + j], image->data[i * image->step + j]};
-            else if(image->encoding == sensor_msgs::image_encodings::RGB8)
-                _image[i][j] = vpRGBa{image->data[i * image->step + j * 3 + 0], image->data[i * image->step + j * 3 + 1], image->data[i * image->step + j * 3 + 2]};
-            else if(image->encoding == sensor_msgs::image_encodings::RGBA8)
-                _image[i][j] = vpRGBa{image->data[i * image->step + j * 4 + 0], image->data[i * image->step + j * 4 + 1], image->data[i * image->step + j * 4 + 2]};
-            else if(image->encoding == sensor_msgs::image_encodings::BGR8)
-                _image[i][j] = vpRGBa{image->data[i * image->step + j * 3 + 2], image->data[i * image->step + j * 3 + 1], image->data[i * image->step + j * 3 + 0]};
-            else if(image->encoding == sensor_msgs::image_encodings::BGRA8)
-                _image[i][j] = vpRGBa{image->data[i * image->step + j * 4 + 2], image->data[i * image->step + j * 4 + 1], image->data[i * image->step + j * 4 + 0]};
-            else
-                _image[i][j] = vpRGBa{0, 0, 0};
-        }
+    if(image->encoding != sensor_msgs::image_encodings::MONO8)
+    {
+      ROS_ERROR_STREAM("The input image must be grayscale.");
+      ros::shutdown();
+    } 
 
-    vpImageConvert::convert(_image, _gray_image);
-
+    _gray_image = visp_bridge::toVispImage(*image);
     _image_new = true;
 
     imageProcessing();
