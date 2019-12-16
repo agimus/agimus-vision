@@ -73,11 +73,11 @@ Node::Node()
           _node_handle);
     if (!cam_info_msg) return;
     cameraInfoCallback(cam_info_msg);
-    
+   
     // Use those parameters to create the camera 
-    _image_sub = _node_handle.subscribe(_image_topic, _queue_size,
+    _image_sub = _node_handle.subscribe(_image_topic, 1,
         &Node::frameCallback, this);
-    _camera_info_sub = _node_handle.subscribe(_camera_info_topic, _queue_size,
+    _camera_info_sub = _node_handle.subscribe(_camera_info_topic, 1,
         &Node::cameraInfoCallback, this);
 
     // TF node of the camera seeing the tags
@@ -242,6 +242,7 @@ void Node::imageProcessing()
 
 void Node::spin()
 {
+    ROS_INFO_STREAM("Spinning.");
     ros::spin();
 }
 
