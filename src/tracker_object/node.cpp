@@ -171,6 +171,7 @@ void Node::imageProcessing()
 
     if( !_detectors.empty() && (_detectors.begin())->second.detector->analyseImage( _gray_image ) )
     {
+      ros::Time time_begin (ros::Time::now());
       agimus_vision::ImageDetectionResult result;
       result.header = _image_header;
 
@@ -223,6 +224,14 @@ void Node::imageProcessing()
       }
       if (!result.ids.empty())
         _detection_publisher.publish(result);
+
+      ros::Time time_end (ros::Time::now());
+      ros::Duration delay = time_end - timestamp;
+      if (delay > ros::Duration(_node_handle.param<double>("max_delay", 0.3)))
+        ROS_WARN_STREAM("\n"
+            "Input delay     : " << time_begin - timestamp << "\n"
+            "Computation time: " << time_end - time_begin << "\n"
+            "Output delay    : " << delay);
     }
 
     if( _debug_display )
