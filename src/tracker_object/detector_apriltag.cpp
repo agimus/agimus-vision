@@ -1,5 +1,7 @@
 #include "agimus_vision/tracker_object/detector_apriltag.hpp"
 
+#include <ros/param.h>
+
 #include <visp3/core/vpColor.h>
 #include <visp3/core/vpDisplay.h>
 #include <visp3/core/vpPoint.h>
@@ -17,7 +19,10 @@ DetectorAprilTag::DetectorAprilTag( const vpCameraParameters &cam_parameters, co
   , _tag_id{ tag_id }
   , _tag_size_meters{ tag_size_meters }
 {
-    Apriltag_detector.setAprilTagNbThreads(4);
+    Apriltag_detector.setAprilTagNbThreads(
+        ros::param::param<int>("apriltag/nb_threads", 4));
+    Apriltag_detector.setAprilTagQuadDecimate(
+        ros::param::param<float>("apriltag/quad_decimate", 1.));
 }
 
 bool DetectorAprilTag::analyseImage( const vpImage< unsigned char > &gray_image )

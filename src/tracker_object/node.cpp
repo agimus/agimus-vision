@@ -140,6 +140,10 @@ void Node::frameCallback(const sensor_msgs::ImageConstPtr& image)
     std::unique_lock<std::mutex> lock(_image_lock, std::try_to_lock);
     if(!lock.owns_lock())
       return;
+    if(_image_header.seq + 1 < image->header.seq) {
+      // Delayed ignores the first _image_header which isn't initialized.
+      ROS_INFO_DELAYED_THROTTLE(5, "Some images were dropped.");
+    }
 
     _image_header = image->header;
     
@@ -157,6 +161,7 @@ void Node::frameCallback(const sensor_msgs::ImageConstPtr& image)
 
 void Node::imageProcessing()
 {
+    ros::Time time_begin (ros::Time::now());
     static tf2_ros::TransformBroadcaster broadcaster;
 
     if( _debug_display )
@@ -171,7 +176,6 @@ void Node::imageProcessing()
 
     if( !_detectors.empty() && (_detectors.begin())->second.detector->analyseImage( _gray_image ) )
     {
-      ros::Time time_begin (ros::Time::now());
       agimus_vision::ImageDetectionResult result;
       result.header = _image_header;
 
@@ -228,7 +232,7 @@ void Node::imageProcessing()
       ros::Time time_end (ros::Time::now());
       ros::Duration delay = time_end - timestamp;
       if (delay > ros::Duration(_node_handle.param<double>("max_delay", 0.3)))
-        ROS_WARN_STREAM("\n"
+        ROS_WARN_STREAM("Image " << _image_header.seq << "\n"
             "Input delay     : " << time_begin - timestamp << "\n"
             "Computation time: " << time_end - time_begin << "\n"
             "Output delay    : " << delay);
