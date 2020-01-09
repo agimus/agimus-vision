@@ -1,0 +1,25 @@
+#ifndef __TRACKER_OBJECT__FWD_HPP__ 
+#define __TRACKER_OBJECT__FWD_HPP__
+
+#include <visp3/core/vpHomogeneousMatrix.h>
+
+template <class T> class vpImage;
+class vpRGBa;
+class vpMbGenericTracker;
+class vpDetectorAprilTag;
+
+namespace agimus_vision {
+namespace tracker_object {
+
+enum State {
+  state_detection,
+  state_tracking,
+};
+
+typedef vpImage< unsigned char > GrayImage_t;
+typedef vpImage< vpRGBa > RGBaImage_t;
+
+}
+}
+
+#endif // __TRACKER_OBJECT__FWD_HPP__ 

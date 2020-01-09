@@ -3,6 +3,7 @@ add_library(${PROJECT_NAME}_tracker_object_lib STATIC
   detector_apriltag.cpp
   detector_chessboard.cpp
   node.cpp
+  tracker.cpp
   ) 
 add_dependencies(${PROJECT_NAME}_tracker_object_lib ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_compile_options(${PROJECT_NAME}_tracker_object_lib PUBLIC -std=c++11)

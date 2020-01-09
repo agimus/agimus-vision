@@ -1,0 +1,96 @@
+<?xml version="1.0"?>
+<root>
+  <!--This file stores intrinsic camera parameters used
+   in the vpCameraParameters Class of ViSP available
+   at https://visp.inria.fr/download/ .
+   It can be read with the parse method of
+   the vpXmlParserCamera class.-->
+  <camera>
+    <!--Name of the camera-->
+    <name>Camera</name>
+    <!--Size of the image on which camera calibration was performed-->
+    <image_width>1280</image_width>
+    <image_height>720</image_height>
+    <!--Intrinsic camera parameters computed for each projection model-->
+    <model>
+      <!--Projection model type-->
+      <type>perspectiveProjWithoutDistortion</type>
+      <!--Pixel ratio-->
+      <px>998.73946226739668</px>
+      <py>993.54570396995143</py>
+      <!--Principal point-->
+      <u0>615.20006931773537</u0>
+      <v0>319.74838247460264</v0>
+    </model>
+    <model>
+      <!--Projection model type-->
+      <type>perspectiveProjWithDistortion</type>
+      <!--Pixel ratio-->
+      <px>1000.1349847771073</px>
+      <py>993.2772178118305</py>
+      <!--Principal point-->
+      <u0>609.93384258999833</u0>
+      <v0>314.31975277247562</v0>
+      <!--Undistorted to distorted distortion parameter-->
+      <kud>-0.017800420260133835</kud>
+      <!--Distorted to undistorted distortion parameter-->
+      <kdu>0.017963682656877592</kdu>
+    </model>
+    <!--Additional information-->
+    <additional_information>
+      <date>2020/01/08 11:59:28</date>
+      <nb_calibration_images>4</nb_calibration_images>
+      <calibration_pattern_type>Chessboard</calibration_pattern_type>
+      <board_size>9x6</board_size>
+      <square_size>0.02325</square_size>
+      <global_reprojection_error>
+        <without_distortion>0.389122</without_distortion>
+        <with_distortion>0.383225</with_distortion>
+      </global_reprojection_error>
+    </additional_information>
+  </camera>
+  <camera>
+    <!--Name of the camera-->
+    <name>Camera</name>
+    <!--Size of the image on which camera calibration was performed-->
+    <image_width>640</image_width>
+    <image_height>480</image_height>
+    <!--Intrinsic camera parameters computed for each projection model-->
+    <model>
+      <!--Projection model type-->
+      <type>perspectiveProjWithoutDistortion</type>
+      <!--Pixel ratio-->
+      <px>661.80590991728423</px>
+      <py>660.18365505326608</py>
+      <!--Principal point-->
+      <u0>303.79388019105613</u0>
+      <v0>211.47654344583231</v0>
+    </model>
+    <model>
+      <!--Projection model type-->
+      <type>perspectiveProjWithDistortion</type>
+      <!--Pixel ratio-->
+      <px>660.62025487517201</px>
+      <py>659.41384691579844</py>
+      <!--Principal point-->
+      <u0>306.76596929347141</u0>
+      <v0>214.22738255736249</v0>
+      <!--Undistorted to distorted distortion parameter-->
+      <kud>0.030927616020155566</kud>
+      <!--Distorted to undistorted distortion parameter-->
+      <kdu>-0.030705943449336102</kdu>
+    </model>
+    <!--Additional information-->
+    <additional_information>
+      <date>2020/01/08 12:06:27</date>
+      <nb_calibration_images>15</nb_calibration_images>
+      <calibration_pattern_type>Chessboard</calibration_pattern_type>
+      <board_size>9x6</board_size>
+      <square_size>0.02325</square_size>
+      <global_reprojection_error>
+        <without_distortion>0.522017</without_distortion>
+        <with_distortion>0.505166</with_distortion>
+      </global_reprojection_error>
+    </additional_information>
+  </camera>
+</root>
