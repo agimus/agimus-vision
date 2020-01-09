@@ -1,11 +1,13 @@
 #ifndef __TRACKER_OBJECT__TRACKER_HPP__ 
 #define __TRACKER_OBJECT__TRACKER_HPP__ 
 
-#include "agimus_vision/tracker_object/fwd.hpp"
+#include <agimus_vision/tracker_object/fwd.hpp>
 
 #include <visp3/core/vpImage.h>
 #include <visp3/core/vpCameraParameters.h>
 #include <visp3/mbt/vpMbGenericTracker.h>
+
+#include <agimus_vision/tracker_object/detector_apriltag.hpp>
 
 namespace agimus_vision {
 namespace tracker_object {
@@ -60,7 +62,7 @@ class AprilTag : public InitializationStep, public TrackingStep
     static void configure(vpDetectorAprilTag& detector,
         const std::string& configFile);
 
-    AprilTag (std::shared_ptr<vpDetectorAprilTag> detector)
+    AprilTag (std::shared_ptr<DetectorAprilTagWrapper> detector)
       : detector_ (detector),
       detectedTag_ (NULL)
     {}
@@ -98,7 +100,7 @@ class AprilTag : public InitializationStep, public TrackingStep
       std::string message;
     };
 
-    std::shared_ptr<vpDetectorAprilTag> detector_;
+    std::shared_ptr<DetectorAprilTagWrapper> detector_;
     vpCameraParameters cam_;
 
     std::vector<Tag> tags_;

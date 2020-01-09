@@ -1,11 +1,6 @@
 #ifndef __TRACKER_BOX__NODE__HPP__
 #define __TRACKER_BOX__NODE__HPP__
 
-#include "agimus_vision/tracker_object/detector_apriltag.hpp"
-
-#include "agimus_vision/AddAprilTagService.h"
-#include "agimus_vision/SetChessboardService.h"
-
 #include <mutex>
 #include <string>
 #include <memory>
@@ -23,6 +18,12 @@
 
 #include <visp3/core/vpImage.h>
 #include <visp3/core/vpCameraParameters.h>
+
+#include "agimus_vision/tracker_object/fwd.hpp"
+#include "agimus_vision/tracker_object/detector_apriltag.hpp"
+
+#include "agimus_vision/AddAprilTagService.h"
+#include "agimus_vision/SetChessboardService.h"
 
 class vpDisplayX;
 
@@ -63,6 +64,7 @@ class Node
     bool _image_new;
 
     // Classes called to detect some object in the image and then track it
+    std::shared_ptr<DetectorAprilTagWrapper> _aprilTagDetector;
     struct DetectorAndName {
       DetectorPtr detector;
       /// Name of the parent node

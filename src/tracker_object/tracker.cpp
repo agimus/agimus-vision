@@ -147,7 +147,7 @@ State AprilTag::detect(const GrayImage_t& I)
   // Pose estimation
   vpHomogeneousMatrix cMt;
   try {
-    if (detector_->getPose(i, detectedTag_->size, cam_, cMt)) {
+    if (detector_->detector.getPose(i, detectedTag_->size, cam_, cMt)) {
       cMo_ = cMt * detectedTag_->oMt.inverse(); 
       return state_tracking;
     }
@@ -170,7 +170,7 @@ State AprilTag::track(const GrayImage_t &I)
   // Pose estimation
   // TODO we should only do VIRTUAL_VS using cMt below as initial guess.
   vpHomogeneousMatrix cMt = cMo_ * detectedTag_->oMt;
-  if (detector_->getPose(i, detectedTag_->size, cam_, cMt)) {
+  if (detector_->detector.getPose(i, detectedTag_->size, cam_, cMt)) {
     cMo_ = cMt * detectedTag_->oMt.inverse(); 
     return state_tracking;
   }
@@ -185,9 +185,9 @@ bool AprilTag::detectTags(const GrayImage_t& I, std::size_t& i)
   // Check if the object is detected.
   detectedTag_ = NULL;
   bool ok = false;
-  for (i = 0; i < detector_->getNbObjects(); i++) {
+  for (i = 0; i < detector_->detector.getNbObjects(); i++) {
     for (Tag& tag : tags_) {
-      ok = (tag.message == detector_->getMessage(i));
+      ok = (tag.message == detector_->detector.getMessage(i));
       if (ok) {
         detectedTag_ = &tag;
         break;
@@ -206,9 +206,9 @@ void AprilTag::drawDebug(GrayImage_t& I)
 
   std::array< vpColor, 4 > colors{{ vpColor::red, vpColor::green, vpColor::blue, vpColor::cyan }};
 
-  for (std::size_t k = 0; k < detector_->getNbObjects(); k++) {
-    if (detectedTag_->message == detector_->getMessage(k)) {
-      std::vector< vpImagePoint > & points (detector_->getPolygon(k));
+  for (std::size_t k = 0; k < detector_->detector.getNbObjects(); k++) {
+    if (detectedTag_->message == detector_->detector.getMessage(k)) {
+      std::vector< vpImagePoint > & points (detector_->detector.getPolygon(k));
       for( unsigned int i{ 0 } ; i < 4 ; ++i )
         vpDisplay::displayLine(I, points[i], points[(i+1)%3], colors[i], 3);
 

@@ -10,34 +10,30 @@
 namespace agimus_vision {
 namespace tracker_object {
 
-// Init common tag detector
-vpDetectorAprilTag DetectorAprilTag::Apriltag_detector{};
-
-
-DetectorAprilTag::DetectorAprilTag( const vpCameraParameters &cam_parameters, const int tag_id, const double tag_size_meters )
+DetectorAprilTag::DetectorAprilTag(DetectorAprilTagWrapperPtr detector,
+    const vpCameraParameters &cam_parameters,
+    const int tag_id,
+    const double tag_size_meters )
   : Detector( cam_parameters )
+  , _detector{ detector }
   , _tag_id{ tag_id }
   , _tag_size_meters{ tag_size_meters }
 {
-    Apriltag_detector.setAprilTagNbThreads(
-        ros::param::param<int>("apriltag/nb_threads", 4));
-    Apriltag_detector.setAprilTagQuadDecimate(
-        ros::param::param<float>("apriltag/quad_decimate", 1.));
 }
 
 bool DetectorAprilTag::analyseImage( const vpImage< unsigned char > &gray_image )
 {
-    return Apriltag_detector.detect( gray_image );
+    return _detector->detect( gray_image );
 }
 
 bool DetectorAprilTag::detect()
 {
     _image_points.clear();
 
-    for( size_t i{ 0 } ; i < Apriltag_detector.getNbObjects() ; ++i )
+    for( size_t i{ 0 } ; i < _detector->detector.getNbObjects() ; ++i )
     {
         std::string tag = " " + std::to_string( _tag_id );
-        std::string msg = Apriltag_detector.getMessage ( i );
+        std::string msg = _detector->detector.getMessage ( i );
         size_t stag = tag.size();
         size_t smsg = msg.size();
 
@@ -45,7 +41,7 @@ bool DetectorAprilTag::detect()
         if(    stag <= smsg
             && msg.compare ( smsg - stag, stag, tag) == 0)
         {
-            _image_points = Apriltag_detector.getPolygon( i );
+            _image_points = _detector->detector.getPolygon( i );
             
             if( _state == no_object )
               _state = newly_acquired_object;

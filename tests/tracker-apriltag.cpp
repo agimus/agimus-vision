@@ -19,8 +19,8 @@ initializationStep::AprilTag* createAprilTag (
     const std::string& config_file,
     const vpCameraParameters &cam)
 {
-  std::shared_ptr<vpDetectorAprilTag> detector
-    (new vpDetectorAprilTag(vpDetectorAprilTag::TAG_36h11));
+  std::shared_ptr<DetectorAprilTagWrapper> detector
+    (new DetectorAprilTagWrapper(vpDetectorAprilTag::TAG_36h11));
 
   if (!config_file.empty())
     initializationStep::AprilTag::configure(*detector, config_file);

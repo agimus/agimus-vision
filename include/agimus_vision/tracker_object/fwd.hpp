@@ -1,6 +1,7 @@
 #ifndef __TRACKER_OBJECT__FWD_HPP__ 
 #define __TRACKER_OBJECT__FWD_HPP__
 
+#include <memory>
 #include <visp3/core/vpHomogeneousMatrix.h>
 
 template <class T> class vpImage;
@@ -18,6 +19,9 @@ enum State {
 
 typedef vpImage< unsigned char > GrayImage_t;
 typedef vpImage< vpRGBa > RGBaImage_t;
+
+struct DetectorAprilTagWrapper;
+typedef std::shared_ptr<DetectorAprilTagWrapper> DetectorAprilTagWrapperPtr;
 
 }
 }

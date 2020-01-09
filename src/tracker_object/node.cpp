@@ -100,8 +100,6 @@ Node::Node()
 
     if( object_type == "apriltag" )
     {
-        DetectorAprilTag::Apriltag_detector.setAprilTagPoseEstimationMethod( vpDetectorAprilTag::vpPoseEstimationMethod::BEST_RESIDUAL_VIRTUAL_VS );
-
         _services.push_back( _node_handle.advertiseService( "add_april_tag_detector", &Node::addAprilTagService, this ) );
     }
     else if( object_type == "chessboard" )
@@ -174,69 +172,69 @@ void Node::imageProcessing()
       vpDisplay::display(_image);
     }
 
-    if( !_detectors.empty() && (_detectors.begin())->second.detector->analyseImage( _gray_image ) )
+    if(_aprilTagDetector)
+      _aprilTagDetector->imageReady = false;
+
+    agimus_vision::ImageDetectionResult result;
+    result.header = _image_header;
+
+    auto timestamp = _image_header.stamp;
+
+    for( auto &detector : _detectors )
     {
-      agimus_vision::ImageDetectionResult result;
-      result.header = _image_header;
+      const DetectorPtr& detector_ptr = detector.second.detector;
+      const std::string& parent_name = detector.second.parent_name;
+      const std::string& object_name = detector.second.object_name;
 
-      auto timestamp = _image_header.stamp;
-
-      for( auto &detector : _detectors )
+      if( detector_ptr->detect() )
       {
-        const DetectorPtr& detector_ptr = detector.second.detector;
-        const std::string& parent_name = detector.second.parent_name;
-        const std::string& object_name = detector.second.object_name;
+        // c: camera
+        // o: object
+        // p: parent
+        tf2::Transform cMo;
+        convert(detector_ptr->getLastCMO(), cMo);
 
-        if( detector_ptr->detect() )
-        {
-          // c: camera
-          // o: object
-          // p: parent
-          tf2::Transform cMo;
-          convert(detector_ptr->getLastCMO(), cMo);
+        geometry_msgs::Transform cMo_msg;
+        tf2::convert(cMo, cMo_msg);
 
-          geometry_msgs::Transform cMo_msg;
-          tf2::convert(cMo, cMo_msg);
+        result.ids      .push_back (detector_ptr->id());
+        result.residuals.push_back (detector_ptr->error());
+        result.poses    .push_back (cMo_msg);
 
-          result.ids      .push_back (detector_ptr->id());
-          result.residuals.push_back (detector_ptr->error());
-          result.poses    .push_back (cMo_msg);
+        bool ok;
+        tf2::Transform pMc;
+        convert(getTransformAtTimeOrNewest
+            (_tf_buffer, parent_name, _tf_camera_node, timestamp, ok),
+            pMc);
+        if (!ok) continue;
 
-          bool ok;
-          tf2::Transform pMc;
-          convert(getTransformAtTimeOrNewest
-              (_tf_buffer, parent_name, _tf_camera_node, timestamp, ok),
-              pMc);
-          if (!ok) continue;
+        geometry_msgs::TransformStamped pMo_msg;
+        tf2::convert(pMc * cMo, pMo_msg.transform);
 
-          geometry_msgs::TransformStamped pMo_msg;
-          tf2::convert(pMc * cMo, pMo_msg.transform);
+        pMo_msg.child_frame_id = object_name;
+        pMo_msg.header.frame_id = parent_name;
+        pMo_msg.header.stamp = timestamp;
 
-          pMo_msg.child_frame_id = object_name;
-          pMo_msg.header.frame_id = parent_name;
-          pMo_msg.header.stamp = timestamp;
+        if( _broadcast_topic )
+          _publisherVision.publish( pMo_msg );
+        pMo_msg.child_frame_id += _broadcast_tf_postfix;
+        if( _broadcast_tf )
+          broadcaster.sendTransform( pMo_msg );
 
-          if( _broadcast_topic )
-            _publisherVision.publish( pMo_msg );
-          pMo_msg.child_frame_id += _broadcast_tf_postfix;
-          if( _broadcast_tf )
-            broadcaster.sendTransform( pMo_msg );
-
-          if( _debug_display )
-            detector_ptr->drawDebug( _image );
-        }
+        if( _debug_display )
+          detector_ptr->drawDebug( _image );
       }
-      if (!result.ids.empty())
-        _detection_publisher.publish(result);
-
-      ros::Time time_end (ros::Time::now());
-      ros::Duration delay = time_end - timestamp;
-      if (delay > ros::Duration(_node_handle.param<double>("max_delay", 0.3)))
-        ROS_WARN_STREAM("Image " << _image_header.seq << "\n"
-            "Input delay     : " << time_begin - timestamp << "\n"
-            "Computation time: " << time_end - time_begin << "\n"
-            "Output delay    : " << delay);
     }
+    if (!result.ids.empty())
+      _detection_publisher.publish(result);
+
+    ros::Time time_end (ros::Time::now());
+    ros::Duration delay = time_end - timestamp;
+    if (delay > ros::Duration(_node_handle.param<double>("max_delay", 0.3)))
+      ROS_WARN_STREAM("Image " << _image_header.seq << "\n"
+          "Input delay     : " << time_begin - timestamp << "\n"
+          "Computation time: " << time_end - time_begin << "\n"
+          "Output delay    : " << delay);
 
     if( _debug_display )
       vpDisplay::flush(_image);
@@ -258,8 +256,22 @@ bool Node::addAprilTagService( agimus_vision::AddAprilTagService::Request  &req,
         return false;
     }
 
+    if (!_aprilTagDetector)
+    {
+      _aprilTagDetector.reset (new DetectorAprilTagWrapper(
+            vpDetectorAprilTag::TAG_36h11));
+
+      _aprilTagDetector->detector.setAprilTagPoseEstimationMethod(
+          vpDetectorAprilTag::BEST_RESIDUAL_VIRTUAL_VS );
+      _aprilTagDetector->detector.setAprilTagNbThreads(
+          ros::param::param<int>("apriltag/nb_threads", 4));
+      _aprilTagDetector->detector.setAprilTagQuadDecimate(
+          ros::param::param<float>("apriltag/quad_decimate", 1.));
+    }
+
     ROS_INFO_STREAM( "Id: " << req.id << '(' << req.size << "m) now being tracked." );
-    DetectorPtr detector (new DetectorAprilTag( _cam_parameters, req.id, req.size ));
+    DetectorPtr detector (new DetectorAprilTag(
+          _aprilTagDetector, _cam_parameters, req.id, req.size ));
 
 
     detector->residualThreshold ( _node_handle.param<double>("residualThreshold", 1e-4) );
