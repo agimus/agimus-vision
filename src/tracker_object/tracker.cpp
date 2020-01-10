@@ -10,8 +10,11 @@ namespace tracker_object {
 void Tracker::process (const GrayImage_t& I)
 {
   vpHomogeneousMatrix cMo;
+  if (n_ > 0) --n_;
   if (state_ == state_detection) {
+    if (n_ > 0) return;
     state_ = initialization_->detect(I);
+    n_ = detectionSubsampling_;
 
     // Initialize the tracker with the result of the detection
     if (state_ == state_tracking) {

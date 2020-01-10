@@ -280,12 +280,10 @@ bool Node::addAprilTagService( agimus_vision::AddAprilTagService::Request  &req,
     detector->residualThreshold ( _node_handle.param<double>("residualThreshold", 1e-4) );
     detector->poseThreshold     ( _node_handle.param<double>("poseThreshold"    , 1e-3) );
 
-    {
-      std::unique_lock<std::mutex> lock(_image_lock);
-      _detectors.emplace( req.id,
-          DetectorAndName ( detector, req.parent_node_name, req.node_name )
-          );
-    }
+    std::unique_lock<std::mutex> lock(_image_lock);
+    _detectors.emplace( req.id,
+        DetectorAndName ( detector, req.parent_node_name, req.node_name )
+        );
     res.success = true;
     return true;
 }
@@ -311,47 +309,43 @@ bool Node::addObjectTracking ( agimus_vision::AddObjectTracking::Request  &req,
       vpQuaternionVector  q (tag.oMt.rotation.x, tag.oMt.rotation.y, tag.oMt.rotation.z, tag.oMt.rotation.w);
       aprilTag->addTag (tag.id, tag.size, vpHomogeneousMatrix (t, q));
     }
+    std::shared_ptr<TrackingStep> tracking;
 
     std::transform(req.tracker_type.begin(), req.tracker_type.end(),
         req.tracker_type.begin(), ::tolower);
 
     if (req.tracker_type == "apriltag") {
       // Same initialization and tracking step
-      {
-        std::unique_lock<std::mutex> lock(_image_lock);
-        _trackers.push_back (Tracker(aprilTag, aprilTag));
-        _trackers.back().name(req.object_name);
-      }
-      ROS_INFO_STREAM( "Object " << req.object_name << " now being tracked using " << req.tracker_type );
-      res.success = true;
-      return true;
-    }
-
-    // Setup tracking step
-    int type;
-    if (req.tracker_type == "edgetracker") {
-      type = vpMbGenericTracker::EDGE_TRACKER;
-    } else if (req.tracker_type == "edgeklttracker") {
-      type = vpMbGenericTracker::EDGE_TRACKER | vpMbGenericTracker::KLT_TRACKER;
+      tracking = aprilTag;
     } else {
-      res.message = "Invalid tracker type.";
-      res.success = false;
-      return true;
+      // Setup tracking step
+      int type;
+      if (req.tracker_type == "edgetracker") {
+        type = vpMbGenericTracker::EDGE_TRACKER;
+      } else if (req.tracker_type == "edgeklttracker") {
+        type = vpMbGenericTracker::EDGE_TRACKER | vpMbGenericTracker::KLT_TRACKER;
+      } else {
+        res.message = "Invalid tracker type.";
+        res.success = false;
+        return true;
+      }
+
+      std::shared_ptr<trackingStep::ModelBased> modelBased (
+          new trackingStep::ModelBased (type,
+            req.model_path,
+            _cam_parameters,
+            _node_handle.param<double>("tracker/projection_error_threshold", 40),
+            req.visp_xml_config_file));
+      modelBased->tracker().setDisplayFeatures(true);
+
+      tracking = modelBased;
     }
 
-    std::shared_ptr<trackingStep::ModelBased> modelBased (
-        new trackingStep::ModelBased (type,
-          req.model_path,
-          _cam_parameters,
-          _node_handle.param<double>("tracker/projection_error_threshold", 40),
-          req.visp_xml_config_file));
-    modelBased->tracker().setDisplayFeatures(true);
-
-    {
-      std::unique_lock<std::mutex> lock(_image_lock);
-      _trackers.push_back (Tracker(aprilTag, modelBased));
-      _trackers.back().name(req.object_name);
-    }
+    std::unique_lock<std::mutex> lock(_image_lock);
+    _trackers.push_back (Tracker(aprilTag, tracking,
+          req.object_name,
+          _node_handle.param<int>("detection_subsampling", 5)
+          ));
     ROS_INFO_STREAM( "Object " << req.object_name << " now being tracked using " << req.tracker_type );
     res.success = true;
     return true;

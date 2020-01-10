@@ -51,13 +51,18 @@ public:
 class Tracker
 {
   public:
-    Tracker () : state_ (state_detection)
+    Tracker () : state_ (state_detection),
+      detectionSubsampling_(1), n_(0)
     {}
 
-    Tracker(std::shared_ptr<InitializationStep> init, std::shared_ptr<TrackingStep> track)
+    Tracker(std::shared_ptr<InitializationStep> init, std::shared_ptr<TrackingStep> track,
+        const std::string& name = "",
+        int subsampling = 1)
       : initialization_ (init),
       tracking_ (track),
-      state_ (state_detection)
+      state_ (state_detection),
+      detectionSubsampling_(subsampling), n_(0),
+      name_ (name)
     {}
 
     /// Process an image.
@@ -95,11 +100,18 @@ class Tracker
       return name_;
     }
 
+    void detectionSubsampling (int n)
+    {
+      detectionSubsampling_ = n;
+    }
+
   private:
     std::shared_ptr<InitializationStep> initialization_;
     std::shared_ptr<TrackingStep> tracking_;
 
     State state_;
+    int detectionSubsampling_;
+    int n_;
     std::string name_;
 };
 
