@@ -58,7 +58,6 @@ Node::Node()
  : _node_handle{"~"}
  , _tf_buffer{}
  , _tf_listener{_tf_buffer}
- , _image_new{ false }
  , _debug_display{ nullptr }
 {
     // Get parameters for the node
@@ -115,19 +114,6 @@ Node::Node()
 Node::~Node()
 {}
 
-void Node::waitForImage()
-{
-    ros::Rate rate{50};
-    while(ros::ok())
-    {
-        if(_image_new)
-            return;
-        ros::spinOnce();
-        rate.sleep();
-        ROS_INFO_DELAYED_THROTTLE(10, "Waiting for images");
-    }
-}
-
 void Node::cameraInfoCallback(const sensor_msgs::CameraInfoConstPtr& camera_info)
 {
     std::lock_guard<std::mutex> lock(_cam_param_lock);
@@ -153,7 +139,6 @@ void Node::frameCallback(const sensor_msgs::ImageConstPtr& image)
     } 
 
     _gray_image = visp_bridge::toVispImage(*image);
-    _image_new = true;
 
     imageProcessing();
 }

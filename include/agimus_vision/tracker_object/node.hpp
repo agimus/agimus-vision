@@ -32,12 +32,14 @@ class vpDisplayX;
 namespace agimus_vision {
 namespace tracker_object {
 
-/// Tracking of April tag.
+/// Agimus vision ROS node.
 ///
-/// - It advertises a service "add_april_tag_detector" (See Node::addAprilTagService).
-/// - It publishes to /tf the tag pose if ROS param "broadcastTf" is \c true.
-///   In this case, the child node name is postfixed with ROS param "broadcastTfPostfix".
-/// - It publishes to /agimus/vision/tags/tf the tag pose if ROS param "broadcastTopic" is \c true.
+/// - It advertises the services
+///   \c add_april_tag_detector (See Node::addAprilTagService)
+///   and \c add_object_tracking (See Node::addObjectTracking).
+/// - It publishes to /tf the tag pose if ROS param \c broadcastTf is \c true.
+///   In this case, the child node name is postfixed with ROS param \c broadcastTfPostfix
+/// - It publishes to \c /agimus/vision/tags/tf the tag pose if ROS param \c broadcastTopic is \c true.
 class Node
 {
     ros::NodeHandle _node_handle;
@@ -62,7 +64,6 @@ class Node
     vpCameraParameters _cam_parameters;
     std_msgs::Header _image_header;
     vpImage<unsigned char> _gray_image;
-    bool _image_new;
 
     // Classes called to detect some object in the image and then track it
     std::shared_ptr<DetectorAprilTagWrapper> _aprilTagDetector;
@@ -84,9 +85,6 @@ class Node
     bool _broadcast_tf;
     bool _broadcast_topic;
 
-    // Wait for the first available image
-    void waitForImage();
-
     std::vector< ros::ServiceServer > _services;
     ros::Publisher _publisherVision;
     ros::Publisher _detection_publisher;
@@ -97,6 +95,7 @@ public:
     ~Node();
 
     /// Callback to update the camera information
+    /// \todo the camera parameters should be propagated to the downstream algos.
     void cameraInfoCallback(const sensor_msgs::CameraInfoConstPtr& camera_info);
 
     /// Callback to use the images

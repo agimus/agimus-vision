@@ -12,28 +12,42 @@
 namespace agimus_vision {
 namespace tracker_object {
 
+/// Base class for object detection.
 class InitializationStep
 {
 public:
+  /// Detect if the image contains the object.
   virtual State detect(const GrayImage_t& I) = 0;
 
+  /// Get an estimate of the object pose.
   virtual void getPose (vpHomogeneousMatrix& cMo) const = 0;
 
+  /// Draw debugging information. A display must have been setup beforehand.
   virtual void drawDebug( GrayImage_t& I ) { (void)I; }
 };
 
+/// Base class for object tracking.
 class TrackingStep
 {
 public:
+  /// Initialize tracking of an object.
+  /// \param I the image onto which the object was detected.
+  /// \param cMo the estimated object pose.
   virtual void init(const GrayImage_t& I, const vpHomogeneousMatrix& cMo) = 0;
 
+  /// Track the object.
+  /// \param I a new image.
   virtual State track(const GrayImage_t& I) = 0;
 
+  /// Get the object pose
   virtual void getPose (vpHomogeneousMatrix& cMo) const = 0;
 
+  /// \copydoc InitializationStep::drawDebug(GrayImage_t&)
   virtual void drawDebug(GrayImage_t& I ) { (void)I; }
 };
 
+/// Object tracking algorithm.
+/// It contains a InitializationStep object and a TrackingStep object.
 class Tracker
 {
   public:
@@ -46,25 +60,36 @@ class Tracker
       state_ (state_detection)
     {}
 
+    /// Process an image.
+    /// If the object was not detected in the previous image, use the
+    /// initialization step to detect it.
+    /// If the object was detected in the previous image, use the
+    /// tracking step.
     void process (const GrayImage_t& I);
 
+    /// Whether an object pose could be computed.
     bool hasPose () const
     {
       return state_ == state_tracking;
     }
 
+    /// Get the object pose, if any. This method does nothing if \c hasPose()
+    /// return \c false.
     inline void getPose (vpHomogeneousMatrix& cMo) const
     {
       if (state_ == state_tracking) tracking_->getPose(cMo);
     }
 
+    /// \copydoc InitializationStep::drawDebug(GrayImage_t&)
     void drawDebug( GrayImage_t& I );
 
+    /// Set the object name
     void name (const std::string& name)
     {
       name_ = name;
     }
 
+    /// Get the object name
     const std::string& name () const
     {
       return name_;
@@ -80,6 +105,7 @@ class Tracker
 
 namespace initializationStep {
 
+/// Detect and track AprilTags.
 class AprilTag : public InitializationStep, public TrackingStep
 {
   public:
@@ -91,10 +117,21 @@ class AprilTag : public InitializationStep, public TrackingStep
       detectedTag_ (NULL)
     {}
 
+    /// Detect one of the provided AprilTag.
     State detect(const GrayImage_t& I);
 
+    /// Initialize tracking of a set of AprilTag.
+    /// \param I unused
     void init(const GrayImage_t &I, const vpHomogeneousMatrix& cMo);
 
+    /// tracks previously seen AprilTags.
+    /// \todo Three improvements:
+    ///       - Very effective: Add ability to use a region of interest
+    ///         around the tracked tag.
+    ///       - Easy: Use only VIRTUAL_VS to estimate
+    ///         the pose. Take example of what is done in DetectorAprilTag.
+    ///       - Easy: Use a ModelBased tracker that contains only the edges of
+    ///         tag. This should be done outside of this class.
     State track(const GrayImage_t &I);
 
     void getPose (vpHomogeneousMatrix& cMo) const
@@ -144,6 +181,11 @@ namespace trackingStep {
 
 typedef initializationStep::AprilTag AprilTag;
 
+/// Track an object based on:
+/// - the edges, based on a model provided by the user,
+/// - and optionally the KLT features that are detected online.
+///
+/// It uses the ViSP vpMbGenericTracker class.
 class ModelBased : public TrackingStep
 {
   public:
