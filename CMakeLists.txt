@@ -40,11 +40,13 @@ ADD_REQUIRED_DEPENDENCY(visp)
 add_message_files(
   FILES
   ImageDetectionResult.msg
+  AprilTag.msg
 )
 
 add_service_files(
   FILES
   AddAprilTagService.srv
+  AddObjectTracking.srv
   SetChessboardService.srv
 )
 
