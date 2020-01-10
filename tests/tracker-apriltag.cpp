@@ -195,8 +195,8 @@ int main(int argc, const char **argv)
           model_file,
           cam,
           opt_projection_error_threshold));
-    Tracker algo (initStep.get(),
-        (apriltag_tracking ? (TrackingStep*)initStep.get() : trackStep.get())
+    Tracker algo (initStep,
+        (apriltag_tracking ? (std::shared_ptr<TrackingStep>)initStep : trackStep)
         );
 
     //Tracker algo (&initStep, &initStep);
@@ -214,6 +214,7 @@ int main(int argc, const char **argv)
 
       vpDisplay::display(I);
 
+      initStep->detector()->imageReady = false;
       algo.process (I);
 
       algo.drawDebug (I);

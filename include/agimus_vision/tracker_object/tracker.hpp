@@ -37,7 +37,10 @@ public:
 class Tracker
 {
   public:
-    Tracker(InitializationStep* init, TrackingStep* track)
+    Tracker () : state_ (state_detection)
+    {}
+
+    Tracker(std::shared_ptr<InitializationStep> init, std::shared_ptr<TrackingStep> track)
       : initialization_ (init),
       tracking_ (track),
       state_ (state_detection)
@@ -45,13 +48,34 @@ class Tracker
 
     void process (const GrayImage_t& I);
 
+    bool hasPose () const
+    {
+      return state_ == state_tracking;
+    }
+
+    inline void getPose (vpHomogeneousMatrix& cMo) const
+    {
+      if (state_ == state_tracking) tracking_->getPose(cMo);
+    }
+
     void drawDebug( GrayImage_t& I );
 
+    void name (const std::string& name)
+    {
+      name_ = name;
+    }
+
+    const std::string& name () const
+    {
+      return name_;
+    }
+
   private:
-    InitializationStep* initialization_;
-    TrackingStep* tracking_;
+    std::shared_ptr<InitializationStep> initialization_;
+    std::shared_ptr<TrackingStep> tracking_;
 
     State state_;
+    std::string name_;
 };
 
 namespace initializationStep {
@@ -86,6 +110,11 @@ class AprilTag : public InitializationStep, public TrackingStep
     void cameraParameters (const vpCameraParameters& cam)
     {
       cam_ = cam;
+    }
+
+    std::shared_ptr<DetectorAprilTagWrapper> detector()
+    {
+      return detector_;
     }
 
   private:
@@ -154,6 +183,8 @@ class ModelBased : public TrackingStep
     }
 
   private:
+    ModelBased(const ModelBased&) {}
+
     vpMbGenericTracker tracker_;
     double projErrorThr_;
 };

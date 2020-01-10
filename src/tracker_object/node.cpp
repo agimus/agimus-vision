@@ -101,6 +101,7 @@ Node::Node()
     if( object_type == "apriltag" )
     {
         _services.push_back( _node_handle.advertiseService( "add_april_tag_detector", &Node::addAprilTagService, this ) );
+        _services.push_back( _node_handle.advertiseService( "add_object_tracking", &Node::addObjectTracking, this ) );
     }
     else if( object_type == "chessboard" )
     {
@@ -175,10 +176,38 @@ void Node::imageProcessing()
     if(_aprilTagDetector)
       _aprilTagDetector->imageReady = false;
 
+    auto timestamp = _image_header.stamp;
+
+    for( Tracker& tracker : _trackers )
+    {
+      tracker.process(_gray_image);
+      if (tracker.hasPose()) {
+        // c: camera
+        // o: object
+        vpHomogeneousMatrix cMo_vp;
+        tracker.getPose(cMo_vp);
+        tf2::Transform cMo_tf;
+        convert(cMo_vp, cMo_tf);
+
+        geometry_msgs::TransformStamped cMo_msg;
+        tf2::convert(cMo_tf, cMo_msg.transform);
+
+        cMo_msg.child_frame_id = tracker.name();
+        cMo_msg.header.frame_id = _tf_camera_node;
+        cMo_msg.header.stamp = timestamp;
+
+        if( _broadcast_topic )
+          _publisherVision.publish( cMo_msg );
+        cMo_msg.child_frame_id += _broadcast_tf_postfix;
+        if( _broadcast_tf )
+          broadcaster.sendTransform( cMo_msg );
+      }
+      if( _debug_display )
+        tracker.drawDebug( _gray_image );
+    }
+
     agimus_vision::ImageDetectionResult result;
     result.header = _image_header;
-
-    auto timestamp = _image_header.stamp;
 
     for( auto &detector : _detectors )
     {
@@ -186,7 +215,7 @@ void Node::imageProcessing()
       const std::string& parent_name = detector.second.parent_name;
       const std::string& object_name = detector.second.object_name;
 
-      if( detector_ptr->detect() )
+      if( detector_ptr->analyseImage (_gray_image) && detector_ptr->detect() )
       {
         // c: camera
         // o: object
@@ -272,6 +301,73 @@ bool Node::addAprilTagService( agimus_vision::AddAprilTagService::Request  &req,
           DetectorAndName ( detector, req.parent_node_name, req.node_name )
           );
     }
+    res.success = true;
+    return true;
+}
+
+bool Node::addObjectTracking ( agimus_vision::AddObjectTracking::Request  &req,
+                               agimus_vision::AddObjectTracking::Response &res )
+{
+    if( req.tags.size() == 0 )
+    {
+      res.message = "At least one tag must be specified.";
+      res.success = false;
+      return true;
+    }
+
+    initAprilTagDetector();
+
+    // Setup initialization step
+    std::shared_ptr<initializationStep::AprilTag> aprilTag (
+        new initializationStep::AprilTag(_aprilTagDetector));
+    aprilTag->cameraParameters (_cam_parameters);
+    for (const agimus_vision::AprilTag& tag : req.tags) {
+      vpTranslationVector t (tag.oMt.translation.x, tag.oMt.translation.y, tag.oMt.translation.z);
+      vpQuaternionVector  q (tag.oMt.rotation.x, tag.oMt.rotation.y, tag.oMt.rotation.z, tag.oMt.rotation.w);
+      aprilTag->addTag (tag.id, tag.size, vpHomogeneousMatrix (t, q));
+    }
+
+    std::transform(req.tracker_type.begin(), req.tracker_type.end(),
+        req.tracker_type.begin(), ::tolower);
+
+    if (req.tracker_type == "apriltag") {
+      // Same initialization and tracking step
+      {
+        std::unique_lock<std::mutex> lock(_image_lock);
+        _trackers.push_back (Tracker(aprilTag, aprilTag));
+        _trackers.back().name(req.object_name);
+      }
+      ROS_INFO_STREAM( "Object " << req.object_name << " now being tracked using " << req.tracker_type );
+      res.success = true;
+      return true;
+    }
+
+    // Setup tracking step
+    int type;
+    if (req.tracker_type == "edgetracker") {
+      type = vpMbGenericTracker::EDGE_TRACKER;
+    } else if (req.tracker_type == "edgeklttracker") {
+      type = vpMbGenericTracker::EDGE_TRACKER | vpMbGenericTracker::KLT_TRACKER;
+    } else {
+      res.message = "Invalid tracker type.";
+      res.success = false;
+      return true;
+    }
+
+    std::shared_ptr<trackingStep::ModelBased> modelBased (
+        new trackingStep::ModelBased (type,
+          req.model_path,
+          _cam_parameters,
+          _node_handle.param<double>("tracker/projection_error_threshold", 40),
+          req.visp_xml_config_file));
+    modelBased->tracker().setDisplayFeatures(true);
+
+    {
+      std::unique_lock<std::mutex> lock(_image_lock);
+      _trackers.push_back (Tracker(aprilTag, modelBased));
+      _trackers.back().name(req.object_name);
+    }
+    ROS_INFO_STREAM( "Object " << req.object_name << " now being tracked using " << req.tracker_type );
     res.success = true;
     return true;
 }

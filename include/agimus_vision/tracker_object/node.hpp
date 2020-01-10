@@ -20,9 +20,11 @@
 #include <visp3/core/vpCameraParameters.h>
 
 #include "agimus_vision/tracker_object/fwd.hpp"
+#include "agimus_vision/tracker_object/tracker.hpp"
 #include "agimus_vision/tracker_object/detector_apriltag.hpp"
 
 #include "agimus_vision/AddAprilTagService.h"
+#include "agimus_vision/AddObjectTracking.h"
 #include "agimus_vision/SetChessboardService.h"
 
 class vpDisplayX;
@@ -76,6 +78,7 @@ class Node
       {}
     };
     std::map< int, DetectorAndName > _detectors;
+    std::vector<Tracker> _trackers;
     
     std::unique_ptr <vpDisplayX> _debug_display;
     bool _broadcast_tf;
@@ -106,6 +109,11 @@ public:
     /// \include srv/AddAprilTagService.srv
     bool addAprilTagService( agimus_vision::AddAprilTagService::Request  &req,
                              agimus_vision::AddAprilTagService::Response &res );
+
+    /// Add object tracking service
+    /// \include srv/AddObjectTracking.srv
+    bool addObjectTracking( agimus_vision::AddObjectTracking::Request  &req,
+                            agimus_vision::AddObjectTracking::Response &res );
 
     /// Setup detection of a chessboard
     /// \include srv/SetChessboardService.srv
