@@ -27,7 +27,7 @@ bool Detector::detect()
     return false;
 }
 
-void Detector::drawDebug( vpImage< vpRGBa > &/*image*/ ) const
+void Detector::drawDebug( GrayImage_t&/*I*/ ) const
 {}
 
 // -----

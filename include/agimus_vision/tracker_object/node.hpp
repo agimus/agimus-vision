@@ -59,7 +59,6 @@ class Node
     std::mutex _cam_param_lock;
     vpCameraParameters _cam_parameters;
     std_msgs::Header _image_header;
-    vpImage<vpRGBa> _image;
     vpImage<unsigned char> _gray_image;
     bool _image_new;
 
@@ -77,7 +76,6 @@ class Node
       {}
     };
     std::map< int, DetectorAndName > _detectors;
-    //std::unique_ptr< Tracker > _tracker;
     
     std::unique_ptr <vpDisplayX> _debug_display;
     bool _broadcast_tf;
@@ -86,10 +84,6 @@ class Node
     // Wait for the first available image
     void waitForImage();
 
-
-    // Init the tracker with the AprilTag found previously
-    void initTracking( int id );
-    
     std::vector< ros::ServiceServer > _services;
     ros::Publisher _publisherVision;
     ros::Publisher _detection_publisher;
@@ -121,6 +115,8 @@ public:
     /// Reset the tag poses
     bool resetTagPosesService( std_srvs::Trigger::Request  &req,
                                std_srvs::Trigger::Response &res );
+
+    void initAprilTagDetector ();
     
     void spin();
 };

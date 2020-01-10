@@ -54,7 +54,7 @@ public:
 
     bool detect();
 
-    void drawDebug( RGBaImage_t &image ) const;
+    void drawDebug( GrayImage_t& I ) const;
 
     size_t id() const
     {

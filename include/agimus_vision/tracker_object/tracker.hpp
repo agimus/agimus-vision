@@ -1,5 +1,5 @@
-#ifndef __TRACKER_OBJECT__TRACKER_HPP__ 
-#define __TRACKER_OBJECT__TRACKER_HPP__ 
+#ifndef __TRACKER_OBJECT__TRACKER_HPP__
+#define __TRACKER_OBJECT__TRACKER_HPP__
 
 #include <agimus_vision/tracker_object/fwd.hpp>
 
@@ -42,7 +42,7 @@ class Tracker
       tracking_ (track),
       state_ (state_detection)
     {}
-      
+
     void process (const GrayImage_t& I);
 
     void drawDebug( GrayImage_t& I );
@@ -163,4 +163,4 @@ class ModelBased : public TrackingStep
 }
 }
 
-#endif // __TRACKER_OBJECT__DETECTOR_APRILTAG_HPP__ 
+#endif // __TRACKER_OBJECT__DETECTOR_APRILTAG_HPP__

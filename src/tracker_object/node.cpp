@@ -55,7 +55,7 @@ void convert (const vpHomogeneousMatrix &Min, tf2::Transform& out)
 }
 
 Node::Node()
- : _node_handle{}
+ : _node_handle{"~"}
  , _tf_buffer{}
  , _tf_listener{_tf_buffer}
  , _image_new{ false }
@@ -166,10 +166,10 @@ void Node::imageProcessing()
     {
       if ( !_debug_display->isInitialised())
       {
-        _debug_display->init(_image);
-        vpDisplay::setTitle(_image, "Visual display");
+        _debug_display->init(_gray_image);
+        vpDisplay::setTitle(_gray_image, "Visual display");
       }
-      vpDisplay::display(_image);
+      vpDisplay::display(_gray_image);
     }
 
     if(_aprilTagDetector)
@@ -222,7 +222,7 @@ void Node::imageProcessing()
           broadcaster.sendTransform( pMo_msg );
 
         if( _debug_display )
-          detector_ptr->drawDebug( _image );
+          detector_ptr->drawDebug( _gray_image );
       }
     }
     if (!result.ids.empty())
@@ -237,7 +237,7 @@ void Node::imageProcessing()
           "Output delay    : " << delay);
 
     if( _debug_display )
-      vpDisplay::flush(_image);
+      vpDisplay::flush(_gray_image);
 }
 
 void Node::spin()
@@ -256,18 +256,7 @@ bool Node::addAprilTagService( agimus_vision::AddAprilTagService::Request  &req,
         return false;
     }
 
-    if (!_aprilTagDetector)
-    {
-      _aprilTagDetector.reset (new DetectorAprilTagWrapper(
-            vpDetectorAprilTag::TAG_36h11));
-
-      _aprilTagDetector->detector.setAprilTagPoseEstimationMethod(
-          vpDetectorAprilTag::BEST_RESIDUAL_VIRTUAL_VS );
-      _aprilTagDetector->detector.setAprilTagNbThreads(
-          ros::param::param<int>("apriltag/nb_threads", 4));
-      _aprilTagDetector->detector.setAprilTagQuadDecimate(
-          ros::param::param<float>("apriltag/quad_decimate", 1.));
-    }
+    initAprilTagDetector();
 
     ROS_INFO_STREAM( "Id: " << req.id << '(' << req.size << "m) now being tracked." );
     DetectorPtr detector (new DetectorAprilTag(
@@ -277,9 +266,12 @@ bool Node::addAprilTagService( agimus_vision::AddAprilTagService::Request  &req,
     detector->residualThreshold ( _node_handle.param<double>("residualThreshold", 1e-4) );
     detector->poseThreshold     ( _node_handle.param<double>("poseThreshold"    , 1e-3) );
 
-    _detectors.emplace( req.id,
-        DetectorAndName ( detector, req.parent_node_name, req.node_name )
-        );
+    {
+      std::unique_lock<std::mutex> lock(_image_lock);
+      _detectors.emplace( req.id,
+          DetectorAndName ( detector, req.parent_node_name, req.node_name )
+          );
+    }
     res.success = true;
     return true;
 }
@@ -306,11 +298,26 @@ bool Node::setChessboardService( agimus_vision::SetChessboardService::Request  &
 bool Node::resetTagPosesService( std_srvs::Trigger::Request  &,
                                  std_srvs::Trigger::Response &res )
 {
-    std::lock_guard<std::mutex> lock(_image_lock);
+    std::unique_lock<std::mutex> lock(_image_lock);
     for( auto &detector : _detectors )
       detector.second.detector->resetState();
     res.success = true;
     return true;
+}
+
+void Node::initAprilTagDetector ()
+{
+  if (_aprilTagDetector) return;
+
+  _aprilTagDetector.reset (new DetectorAprilTagWrapper(
+        vpDetectorAprilTag::TAG_36h11));
+
+  _aprilTagDetector->detector.setAprilTagPoseEstimationMethod(
+      vpDetectorAprilTag::BEST_RESIDUAL_VIRTUAL_VS );
+  _aprilTagDetector->detector.setAprilTagNbThreads(
+      _node_handle.param<int>("apriltag/nb_threads", 4));
+  _aprilTagDetector->detector.setAprilTagQuadDecimate(
+      _node_handle.param<float>("apriltag/quad_decimate", 1.));
 }
 
 }

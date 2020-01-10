@@ -148,10 +148,11 @@ State AprilTag::detect(const GrayImage_t& I)
   vpHomogeneousMatrix cMt;
   try {
     if (detector_->detector.getPose(i, detectedTag_->size, cam_, cMt)) {
-      cMo_ = cMt * detectedTag_->oMt.inverse(); 
+      cMo_ = cMt * detectedTag_->oMt.inverse();
       return state_tracking;
     }
-  } catch (const vpException&) {
+  } catch (const vpException& e) {
+    std::cerr << e.what() << std::endl;
   }
   return state_detection;
 }
@@ -171,7 +172,7 @@ State AprilTag::track(const GrayImage_t &I)
   // TODO we should only do VIRTUAL_VS using cMt below as initial guess.
   vpHomogeneousMatrix cMt = cMo_ * detectedTag_->oMt;
   if (detector_->detector.getPose(i, detectedTag_->size, cam_, cMt)) {
-    cMo_ = cMt * detectedTag_->oMt.inverse(); 
+    cMo_ = cMt * detectedTag_->oMt.inverse();
     return state_tracking;
   }
   return state_detection;
@@ -202,7 +203,7 @@ bool AprilTag::detectTags(const GrayImage_t& I, std::size_t& i)
 
 void AprilTag::drawDebug(GrayImage_t& I)
 {
-  if(detectedTag_ == NULL) return; 
+  if(detectedTag_ == NULL) return;
 
   std::array< vpColor, 4 > colors{{ vpColor::red, vpColor::green, vpColor::blue, vpColor::cyan }};
 
@@ -253,17 +254,18 @@ ModelBased::ModelBased(int trackerType,
   projectionErrorThreshold (projectionErrorThr);
 }
 
-void ModelBased::init(const vpImage< unsigned char > &I,
+void ModelBased::init(const GrayImage_t &I,
     const vpHomogeneousMatrix& cMo)
 {
   tracker_.initFromPose(I, cMo);
 }
 
-State ModelBased::track(const vpImage< unsigned char > &I)
+State ModelBased::track(const GrayImage_t &I)
 {
   try{
     tracker_.track(I);
-  } catch (const vpException&) {
+  } catch (const vpException& e) {
+    std::cerr << e.what() << std::endl;
     return state_detection;
   }
 

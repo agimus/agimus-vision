@@ -54,18 +54,18 @@ bool DetectorChessboard::detect()
 }
     
     
-void DetectorChessboard::drawDebug( vpImage< vpRGBa > &image ) const
+void DetectorChessboard::drawDebug( GrayImage_t& I ) const
 {
   if( _state == no_object )
     return;
 
   cv::Mat mat_image{};
-  vpImageConvert::convert( image, mat_image );
+  vpImageConvert::convert( I, mat_image );
 
   cv::drawChessboardCorners( mat_image, _chessboard_size, _image_points_cv, true );
   
-  vpImageConvert::convert( mat_image, image );
-  vpDisplay::display( image );
+  vpImageConvert::convert( mat_image, I );
+  vpDisplay::display( I );
 }
 
 
