@@ -11,6 +11,7 @@
 #include <ros/package.h>
 #include <ros/console.h>
 #include <sensor_msgs/image_encodings.h>
+#include <image_transport/image_transport.h>
 
 #include <visp3/gui/vpDisplayX.h>
 #include <visp3/core/vpImageConvert.h>
@@ -81,10 +82,6 @@ Node::Node()
     // TF node of the camera seeing the tags
     _node_handle.param<std::string>("cameraFrame", _tf_camera_node, "rgbd_rgb_optical_frame");
 
-    // Display the tags seen by the camera
-    if (_node_handle.param<bool>("debugDisplay", false))
-        _debug_display.reset( new vpDisplayX{} );
-
     // Broadcasting methods
     _node_handle.param<bool>("broadcastTf", _broadcast_tf, false);
     _node_handle.param<std::string>("broadcastTfPostfix", _broadcast_tf_postfix, "");
@@ -148,15 +145,16 @@ void Node::imageProcessing()
     ros::Time time_begin (ros::Time::now());
     static tf2_ros::TransformBroadcaster broadcaster;
 
-    if( _debug_display )
-    {
-      if ( !_debug_display->isInitialised())
-      {
+    // Display the tags seen by the camera
+    bool debug_display = _node_handle.param<bool>("debugDisplay", false);
+    if (debug_display && !_debug_display) {
+        _debug_display.reset( new vpDisplayX{} );
         _debug_display->init(_gray_image);
         vpDisplay::setTitle(_gray_image, "Visual display");
-      }
-      vpDisplay::display(_gray_image);
     }
+
+    if( debug_display )
+      vpDisplay::display(_gray_image);
 
     if(_aprilTagDetector)
       _aprilTagDetector->imageReady = false;
@@ -187,7 +185,7 @@ void Node::imageProcessing()
         if( _broadcast_tf )
           broadcaster.sendTransform( cMo_msg );
       }
-      if( _debug_display )
+      if( debug_display )
         tracker.drawDebug( _gray_image );
     }
 
@@ -235,7 +233,7 @@ void Node::imageProcessing()
         if( _broadcast_tf )
           broadcaster.sendTransform( pMo_msg );
 
-        if( _debug_display )
+        if( debug_display )
           detector_ptr->drawDebug( _gray_image );
       }
     }
@@ -250,8 +248,20 @@ void Node::imageProcessing()
           "Computation time: " << time_end - time_begin << "\n"
           "Output delay    : " << delay);
 
-    if( _debug_display )
-      vpDisplay::flush(_gray_image);
+    if( debug_display )
+    {
+      if (_node_handle.param<bool>("publishDebugDisplay", false)) {
+        if (!_debug_publisher) {
+          image_transport::ImageTransport it(_node_handle);
+          _debug_publisher.reset(new image_transport::Publisher (it.advertise("debug", 1)));
+        }
+        RGBaImage_t img;
+        vpDisplay::getImage(_gray_image, img);
+        sensor_msgs::Image msg = visp_bridge::toSensorMsgsImage(img);
+        _debug_publisher->publish(msg);
+      } else
+        vpDisplay::flush(_gray_image);
+    }
 }
 
 void Node::spin()

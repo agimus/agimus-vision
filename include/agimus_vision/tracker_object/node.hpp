@@ -27,7 +27,8 @@
 #include "agimus_vision/AddObjectTracking.h"
 #include "agimus_vision/SetChessboardService.h"
 
-class vpDisplayX;
+class vpDisplay;
+namespace image_transport { class Publisher; }
 
 namespace agimus_vision {
 namespace tracker_object {
@@ -81,7 +82,9 @@ class Node
     std::map< int, DetectorAndName > _detectors;
     std::vector<Tracker> _trackers;
     
-    std::unique_ptr <vpDisplayX> _debug_display;
+    std::unique_ptr <vpDisplay> _debug_display;
+    std::unique_ptr <image_transport::Publisher> _debug_publisher;
+
     bool _broadcast_tf;
     bool _broadcast_topic;
 
