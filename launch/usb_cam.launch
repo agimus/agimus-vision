@@ -1,0 +1,28 @@
+<launch>
+  <node name="usb_cam" pkg="usb_cam" type="usb_cam_node" output="log" >
+    <param name="video_device" value="/dev/video0" />
+    <param name="image_width" value="640" />
+    <param name="image_height" value="480" />
+    <param name="pixel_format" value="yuyv" />
+    <param name="camera_frame_id" value="usb_cam" />
+    <param name="io_method" value="mmap"/>
+  </node>
+  <group ns="usb_cam">
+    <node name="image_proc" pkg="image_proc" type="image_proc"/>
+  </group>
+  <!--node name="tracker" pkg="agimus_vision" type="tracker_object" output="screen"
+    launch-prefix="xterm -e gdb - -args" -->
+  <node name="tracker_object" pkg="agimus_vision" type="tracker_object" output="screen">
+    <param name="imageTopic" value="/usb_cam/image_mono"/>
+    <param name="cameraInfoTopic" value="/usb_cam/camera_info"/>
+    <param name="debugDisplay" value="true"/>
+    <param name="publishDebugDisplay" value="false"/>
+    <param name="broadcastTopic" value="true"/>
+
+    <param name="max_delay" value="0.03"/>
+    <param name="detection_subsampling" value="5"/>
+    <param name="tracker/projection_error_threshold" value="40."/>
+    <param name="apriltag/nb_treads" value="4"/>
+    <param name="apriltag/quad_decimate" value="2."/>
+  </node>
+</launch>
