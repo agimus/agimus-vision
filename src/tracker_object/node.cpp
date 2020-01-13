@@ -128,12 +128,15 @@ void Node::frameCallback(const sensor_msgs::ImageConstPtr& image)
     }
 
     _image_header = image->header;
-    
-    if(image->encoding != sensor_msgs::image_encodings::MONO8)
-    {
-      ROS_ERROR_STREAM("The input image must be grayscale.");
-      ros::shutdown();
-    } 
+
+    if(   image->encoding != sensor_msgs::image_encodings::MONO8
+       && image->encoding != sensor_msgs::image_encodings::RGB8
+       && image->encoding != sensor_msgs::image_encodings::RGBA8
+       && image->encoding != sensor_msgs::image_encodings::BGR8
+       && image->encoding != sensor_msgs::image_encodings::BGRA8) {
+        ROS_ERROR_STREAM("The input image must be grayscale.");
+        ros::shutdown();
+    }
 
     _gray_image = visp_bridge::toVispImage(*image);
 
@@ -148,9 +151,12 @@ void Node::imageProcessing()
     // Display the tags seen by the camera
     bool debug_display = _node_handle.param<bool>("debugDisplay", false);
     if (debug_display && !_debug_display) {
-        _debug_display.reset( new vpDisplayX{} );
-        _debug_display->init(_gray_image);
-        vpDisplay::setTitle(_gray_image, "Visual display");
+      _debug_display.reset( new vpDisplayX{} );
+      _debug_display->init(_gray_image);
+      vpDisplay::setTitle(_gray_image, "Visual display");
+    } else if (!debug_display && _debug_display) {
+      vpDisplay::close(_gray_image);
+      _debug_display.reset(NULL);
     }
 
     if( debug_display )
