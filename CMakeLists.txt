@@ -74,15 +74,7 @@ SET(${PROJECT_NAME}_HEADERS
   include/agimus_vision/tracker_object/node.hpp
   )
 
-install(DIRECTORY objects
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
-)
-
-install(DIRECTORY launch
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
-)
-
-install(DIRECTORY data
+install(DIRECTORY objects launch config data
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )
 
