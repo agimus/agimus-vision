@@ -1,5 +1,7 @@
 #include "agimus_vision/tracker_object/detector_apriltag.hpp"
 
+#include <ros/param.h>
+
 #include <visp3/core/vpColor.h>
 #include <visp3/core/vpDisplay.h>
 #include <visp3/core/vpPoint.h>
@@ -8,31 +10,30 @@
 namespace agimus_vision {
 namespace tracker_object {
 
-// Init common tag detector
-vpDetectorAprilTag DetectorAprilTag::Apriltag_detector{};
-
-
-DetectorAprilTag::DetectorAprilTag( const vpCameraParameters &cam_parameters, const int tag_id, const double tag_size_meters )
+DetectorAprilTag::DetectorAprilTag(DetectorAprilTagWrapperPtr detector,
+    const vpCameraParameters &cam_parameters,
+    const int tag_id,
+    const double tag_size_meters )
   : Detector( cam_parameters )
+  , _detector{ detector }
   , _tag_id{ tag_id }
   , _tag_size_meters{ tag_size_meters }
 {
-    Apriltag_detector.setAprilTagNbThreads(4);
 }
 
 bool DetectorAprilTag::analyseImage( const vpImage< unsigned char > &gray_image )
 {
-    return Apriltag_detector.detect( gray_image );
+    return _detector->detect( gray_image );
 }
 
 bool DetectorAprilTag::detect()
 {
     _image_points.clear();
 
-    for( size_t i{ 0 } ; i < Apriltag_detector.getNbObjects() ; ++i )
+    for( size_t i{ 0 } ; i < _detector->detector.getNbObjects() ; ++i )
     {
         std::string tag = " " + std::to_string( _tag_id );
-        std::string msg = Apriltag_detector.getMessage ( i );
+        std::string msg = _detector->detector.getMessage ( i );
         size_t stag = tag.size();
         size_t smsg = msg.size();
 
@@ -40,7 +41,7 @@ bool DetectorAprilTag::detect()
         if(    stag <= smsg
             && msg.compare ( smsg - stag, stag, tag) == 0)
         {
-            _image_points = Apriltag_detector.getPolygon( i );
+            _image_points = _detector->detector.getPolygon( i );
             
             if( _state == no_object )
               _state = newly_acquired_object;
@@ -59,7 +60,7 @@ bool DetectorAprilTag::detect()
     return false;
 }
 
-void DetectorAprilTag::drawDebug( vpImage< vpRGBa > &image ) const
+void DetectorAprilTag::drawDebug( GrayImage_t& I ) const
 {
     if( _state == no_object )
         return; 
@@ -67,9 +68,9 @@ void DetectorAprilTag::drawDebug( vpImage< vpRGBa > &image ) const
     std::array< vpColor, 4 > colors{{ vpColor::red, vpColor::green, vpColor::blue, vpColor::cyan }};
 
     for( unsigned int i{ 0 } ; i < 4 ; ++i )
-        vpDisplay::displayLine( image, _image_points[ i ], _image_points[ i == 3 ? 0 : i + 1 ], colors[ i ], 3 );
+        vpDisplay::displayLine( I, _image_points[ i ], _image_points[ i == 3 ? 0 : i + 1 ], colors[ i ], 3 );
 
-    vpDisplay::displayFrame( image, _cMo, _cam_parameters, _tag_size_meters * 2, vpColor::none );
+    vpDisplay::displayFrame( I, _cMo, _cam_parameters, _tag_size_meters * 2, vpColor::none );
 
     // FIXME this should be fixed as the display is not correct
     /*
@@ -84,9 +85,9 @@ void DetectorAprilTag::drawDebug( vpImage< vpRGBa > &image ) const
     vpMeterPixelConversion::convertPoint( _cam_parameters, c.get_x(), c.get_y(), pointC );
     vpMeterPixelConversion::convertPoint( _cam_parameters, d.get_x(), d.get_y(), pointD );
 
-    vpDisplay::displayArrow( image, pointA, pointB, vpColor::red );
-    vpDisplay::displayArrow( image, pointA, pointC, vpColor::green );
-    vpDisplay::displayArrow( image, pointA, pointD, vpColor::blue );
+    vpDisplay::displayArrow( I, pointA, pointB, vpColor::red );
+    vpDisplay::displayArrow( I, pointA, pointC, vpColor::green );
+    vpDisplay::displayArrow( I, pointA, pointD, vpColor::blue );
     */
 }
 

@@ -1,0 +1,19 @@
+# The tags
+agimus_vision/AprilTag[] tags
+# The object name
+string object_name
+
+# A XML file to tune VISP. Leave it empty to use the default config.
+string visp_xml_config_file
+
+# A case-insensitive string identifying a tracker. It can be
+# - AprilTag
+# - EdgeTracker
+# - EdgeKltTracker
+string tracker_type
+# If tracker_type is EdgeTracker or EdgeKltTracker, a VISP .cao file
+# (.wrl might be supported to) must be specified.
+string model_path
+---
+bool success
+string message

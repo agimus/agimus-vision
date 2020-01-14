@@ -1,0 +1,53 @@
+tags:
+  - id: 20
+    size: 0.06
+    oMt:
+      translation:
+        x: -0.062875
+        y: 0.008625
+        z: 0.022
+      rotation:
+        x: 0.
+        y: 0.
+        z: 0.
+        w: 1.
+  - id: 21
+    size: 0.06
+    oMt:
+      translation:
+        x: 0.062875
+        y: 0.008625
+        z: 0.022
+      rotation:
+        x: 0.
+        y: 0.
+        z: 0.
+        w: 1.
+  - id: 22
+    size: 0.06
+    oMt:
+      translation:
+        x: 0.062875
+        y: 0.008625
+        z: -0.022
+      rotation:
+        x: 0.
+        y: 1.
+        z: 0.
+        w: 0.
+  - id: 23
+    size: 0.06
+    oMt:
+      translation:
+        x: -0.062875
+        y: 0.008625
+        z: -0.022
+      rotation:
+        x: 0.
+        y: 1.
+        z: 0.
+        w: 0.
+object_name: box
+visp_xml_config_file: /home/jmirabel/devel/robotpkg/src/agimus-vision/tests/mbt-config.xml
+tracker_type: edgeklttracker
+model_path: /home/jmirabel/devel/robotpkg/src/agimus-vision/tests/box.cao

@@ -1,0 +1,81 @@
+<conf>
+  <apriltag>
+    <nb_threads>4</nb_threads>
+    <quad_decimate>1.</quad_decimate>
+    <quad_sigma>0.</quad_sigma>
+  </apriltag>
+
+  <klt>
+    <mask_border>5</mask_border>
+    <max_features>300</max_features>
+    <window_size>5</window_size>
+    <quality>0.015</quality>
+    <min_distance>8</min_distance>
+    <harris>0.01</harris>
+    <size_block>3</size_block>
+    <pyramid_lvl>3</pyramid_lvl>
+  </klt>
+
+  <ecm>
+    <mask>
+      <size>5</size>
+      <nb_mask>180</nb_mask>
+    </mask>
+    <range>
+      <tracking>12</tracking>
+    </range>
+    <contrast>
+      <edge_threshold>10000</edge_threshold>
+      <mu1>0.5</mu1>
+      <mu2>0.5</mu2>
+    </contrast>
+    <sample>
+      <step>4</step>
+    </sample>
+  </ecm>
+
+  <face>
+    <angle_appear>70</angle_appear>
+    <angle_disappear>80</angle_disappear>
+    <!-- Clip near or far faces.
+    <near_clipping></near_clipping>
+    <far_clipping></far_clipping>
+    -->
+    <fov_clipping>false</fov_clipping>
+  </face>
+
+  <lod>
+    <use_lod>false</use_lod>
+    <!--
+    <min_line_length_threshold></min_line_length_threshold>
+    <min_polygon_area_threshold></min_polygon_area_threshold>
+    -->
+  </lod>
+
+  <!--
+  <depth_normal>
+    <feature_estimation_method></feature_estimation_method>
+    <PCL_plane_estimation>
+      <method></method>
+      <ransac_max_iter></ransac_max_iter>
+      <ransac_threshold></ransac_threshold>
+    </PCL_plane_estimation>
+    <sampling_step>
+      <step_X></step_X>
+      <step_Y></step_Y>
+    </sampling_step>
+  </depth_normal>
+
+  <depth_dense>
+    <sampling_step>
+      <step_X></step_X>
+      <step_Y></step_Y>
+    </sampling_step>
+  </depth_dense>
+
+  <projection_error>
+    <sample_step></sample_step>
+    <kernel_size></kernel_size>
+  </projection_error>
+  -->
+</conf>

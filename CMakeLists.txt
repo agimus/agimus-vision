@@ -31,6 +31,7 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   tf2_ros
   tf2_geometry_msgs
+  image_transport
 )
 
 find_package(OpenCV REQUIRED)
@@ -40,11 +41,13 @@ ADD_REQUIRED_DEPENDENCY(visp)
 add_message_files(
   FILES
   ImageDetectionResult.msg
+  AprilTag.msg
 )
 
 add_service_files(
   FILES
   AddAprilTagService.srv
+  AddObjectTracking.srv
   SetChessboardService.srv
 )
 
@@ -59,6 +62,7 @@ catkin_package()
 
 add_subdirectory(src/tracker_object)
 ##add_subdirectory(src/extrinsic_calibration)
+add_subdirectory(tests)
 
 SET(${PROJECT_NAME}_HEADERS
   include/agimus_vision/extrinsic_calibration/extrinsic_calibration.hpp
@@ -70,15 +74,7 @@ SET(${PROJECT_NAME}_HEADERS
   include/agimus_vision/tracker_object/node.hpp
   )
 
-install(DIRECTORY objects
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
-)
-
-install(DIRECTORY launch
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
-)
-
-install(DIRECTORY data
+install(DIRECTORY objects launch config data
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )
 

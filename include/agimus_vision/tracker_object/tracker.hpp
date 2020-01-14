@@ -1,0 +1,251 @@
+#ifndef __TRACKER_OBJECT__TRACKER_HPP__
+#define __TRACKER_OBJECT__TRACKER_HPP__
+
+#include <agimus_vision/tracker_object/fwd.hpp>
+
+#include <visp3/core/vpImage.h>
+#include <visp3/core/vpCameraParameters.h>
+#include <visp3/mbt/vpMbGenericTracker.h>
+
+#include <agimus_vision/tracker_object/detector_apriltag.hpp>
+
+namespace agimus_vision {
+namespace tracker_object {
+
+/// Base class for object detection.
+class InitializationStep
+{
+public:
+  /// Detect if the image contains the object.
+  virtual State detect(const GrayImage_t& I) = 0;
+
+  /// Get an estimate of the object pose.
+  virtual void getPose (vpHomogeneousMatrix& cMo) const = 0;
+
+  /// Draw debugging information. A display must have been setup beforehand.
+  virtual void drawDebug( GrayImage_t& I ) { (void)I; }
+};
+
+/// Base class for object tracking.
+class TrackingStep
+{
+public:
+  /// Initialize tracking of an object.
+  /// \param I the image onto which the object was detected.
+  /// \param cMo the estimated object pose.
+  virtual void init(const GrayImage_t& I, const vpHomogeneousMatrix& cMo) = 0;
+
+  /// Track the object.
+  /// \param I a new image.
+  virtual State track(const GrayImage_t& I) = 0;
+
+  /// Get the object pose
+  virtual void getPose (vpHomogeneousMatrix& cMo) const = 0;
+
+  /// \copydoc InitializationStep::drawDebug(GrayImage_t&)
+  virtual void drawDebug(GrayImage_t& I ) { (void)I; }
+};
+
+/// Object tracking algorithm.
+/// It contains a InitializationStep object and a TrackingStep object.
+class Tracker
+{
+  public:
+    Tracker () : state_ (state_detection),
+      detectionSubsampling_(1), n_(0)
+    {}
+
+    Tracker(std::shared_ptr<InitializationStep> init, std::shared_ptr<TrackingStep> track,
+        const std::string& name = "",
+        int subsampling = 1)
+      : initialization_ (init),
+      tracking_ (track),
+      state_ (state_detection),
+      detectionSubsampling_(subsampling), n_(0),
+      name_ (name)
+    {}
+
+    /// Process an image.
+    /// If the object was not detected in the previous image, use the
+    /// initialization step to detect it.
+    /// If the object was detected in the previous image, use the
+    /// tracking step.
+    void process (const GrayImage_t& I);
+
+    /// Whether an object pose could be computed.
+    bool hasPose () const
+    {
+      return state_ == state_tracking;
+    }
+
+    /// Get the object pose, if any. This method does nothing if \c hasPose()
+    /// return \c false.
+    inline void getPose (vpHomogeneousMatrix& cMo) const
+    {
+      if (state_ == state_tracking) tracking_->getPose(cMo);
+    }
+
+    /// \copydoc InitializationStep::drawDebug(GrayImage_t&)
+    void drawDebug( GrayImage_t& I );
+
+    /// Set the object name
+    void name (const std::string& name)
+    {
+      name_ = name;
+    }
+
+    /// Get the object name
+    const std::string& name () const
+    {
+      return name_;
+    }
+
+    void detectionSubsampling (int n)
+    {
+      detectionSubsampling_ = n;
+    }
+
+  private:
+    std::shared_ptr<InitializationStep> initialization_;
+    std::shared_ptr<TrackingStep> tracking_;
+
+    State state_;
+    int detectionSubsampling_;
+    int n_;
+    std::string name_;
+};
+
+namespace initializationStep {
+
+/// Detect and track AprilTags.
+class AprilTag : public InitializationStep, public TrackingStep
+{
+  public:
+    static void configure(vpDetectorAprilTag& detector,
+        const std::string& configFile);
+
+    AprilTag (std::shared_ptr<DetectorAprilTagWrapper> detector)
+      : detector_ (detector),
+      detectedTag_ (NULL)
+    {}
+
+    /// Detect one of the provided AprilTag.
+    State detect(const GrayImage_t& I);
+
+    /// Initialize tracking of a set of AprilTag.
+    /// \param I unused
+    void init(const GrayImage_t &I, const vpHomogeneousMatrix& cMo);
+
+    /// tracks previously seen AprilTags.
+    /// \todo Three improvements:
+    ///       - Very effective: Add ability to use a region of interest
+    ///         around the tracked tag.
+    ///       - Easy: Use only VIRTUAL_VS to estimate
+    ///         the pose. Take example of what is done in DetectorAprilTag.
+    ///       - Easy: Use a ModelBased tracker that contains only the edges of
+    ///         tag. This should be done outside of this class.
+    State track(const GrayImage_t &I);
+
+    void getPose (vpHomogeneousMatrix& cMo) const
+    {
+      cMo = cMo_;
+    }
+
+    void drawDebug( GrayImage_t& I );
+
+    /// \return true if the tag was added and false if it already existed.
+    bool addTag (int id, double size, vpHomogeneousMatrix oMt);
+
+    void cameraParameters (const vpCameraParameters& cam)
+    {
+      cam_ = cam;
+    }
+
+    std::shared_ptr<DetectorAprilTagWrapper> detector()
+    {
+      return detector_;
+    }
+
+  private:
+    /// \param i index of tag in detector. It is valid only if the return value
+    ///        is true.
+    bool detectTags(const GrayImage_t& I, std::size_t& i);
+
+    struct Tag {
+      vpHomogeneousMatrix oMt;
+      double size;
+      int id;
+      std::string message;
+    };
+
+    std::shared_ptr<DetectorAprilTagWrapper> detector_;
+    vpCameraParameters cam_;
+
+    std::vector<Tag> tags_;
+
+    Tag* detectedTag_;
+    vpHomogeneousMatrix cMo_;
+};
+
+}
+
+namespace trackingStep {
+
+typedef initializationStep::AprilTag AprilTag;
+
+/// Track an object based on:
+/// - the edges, based on a model provided by the user,
+/// - and optionally the KLT features that are detected online.
+///
+/// It uses the ViSP vpMbGenericTracker class.
+class ModelBased : public TrackingStep
+{
+  public:
+    ModelBased(int trackerType,
+        const std::string& modelFile,
+        const vpCameraParameters &cam,
+        double projectionErrorThreshold,
+        const std::string& configFile = "");
+
+    ModelBased () :
+      tracker_ (),
+      projErrorThr_ (40.)
+    {}
+
+    void init(const vpImage< unsigned char > &gray_image,
+        const vpHomogeneousMatrix& cMo);
+
+    State track(const vpImage< unsigned char > &gray_image);
+
+    void getPose (vpHomogeneousMatrix& cMo) const;
+
+    void drawDebug( GrayImage_t &I );
+
+    void projectionErrorThreshold (double thr)
+    {
+      projErrorThr_ = thr;
+    }
+
+    vpMbGenericTracker& tracker()
+    {
+      return tracker_;
+    }
+
+    const vpMbGenericTracker& tracker() const
+    {
+      return tracker_;
+    }
+
+  private:
+    ModelBased(const ModelBased&) {}
+
+    vpMbGenericTracker tracker_;
+    double projErrorThr_;
+};
+
+}
+
+}
+}
+
+#endif // __TRACKER_OBJECT__DETECTOR_APRILTAG_HPP__

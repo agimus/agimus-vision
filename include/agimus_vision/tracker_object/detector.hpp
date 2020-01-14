@@ -8,6 +8,8 @@
 #include <visp3/core/vpImagePoint.h>
 #include <visp3/core/vpImage.h>
 
+#include "agimus_vision/tracker_object/fwd.hpp"
+
 namespace agimus_vision {
 namespace tracker_object {
 
@@ -53,7 +55,7 @@ public:
 
     virtual bool detect();
 
-    virtual void drawDebug( vpImage< vpRGBa > &image ) const;
+    virtual void drawDebug( GrayImage_t& I ) const;
 
     vpHomogeneousMatrix getLastCMO() const
     {

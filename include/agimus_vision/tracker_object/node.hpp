@@ -1,11 +1,6 @@
 #ifndef __TRACKER_BOX__NODE__HPP__
 #define __TRACKER_BOX__NODE__HPP__
 
-#include "agimus_vision/tracker_object/detector_apriltag.hpp"
-
-#include "agimus_vision/AddAprilTagService.h"
-#include "agimus_vision/SetChessboardService.h"
-
 #include <mutex>
 #include <string>
 #include <memory>
@@ -24,17 +19,28 @@
 #include <visp3/core/vpImage.h>
 #include <visp3/core/vpCameraParameters.h>
 
-class vpDisplayX;
+#include "agimus_vision/tracker_object/fwd.hpp"
+#include "agimus_vision/tracker_object/tracker.hpp"
+#include "agimus_vision/tracker_object/detector_apriltag.hpp"
+
+#include "agimus_vision/AddAprilTagService.h"
+#include "agimus_vision/AddObjectTracking.h"
+#include "agimus_vision/SetChessboardService.h"
+
+class vpDisplay;
+namespace image_transport { class Publisher; }
 
 namespace agimus_vision {
 namespace tracker_object {
 
-/// Tracking of April tag.
+/// Agimus vision ROS node.
 ///
-/// - It advertises a service "add_april_tag_detector" (See Node::addAprilTagService).
-/// - It publishes to /tf the tag pose if ROS param "broadcastTf" is \c true.
-///   In this case, the child node name is postfixed with ROS param "broadcastTfPostfix".
-/// - It publishes to /agimus/vision/tags/tf the tag pose if ROS param "broadcastTopic" is \c true.
+/// - It advertises the services
+///   \c add_april_tag_detector (See Node::addAprilTagService)
+///   and \c add_object_tracking (See Node::addObjectTracking).
+/// - It publishes to /tf the tag pose if ROS param \c broadcastTf is \c true.
+///   In this case, the child node name is postfixed with ROS param \c broadcastTfPostfix
+/// - It publishes to \c /agimus/vision/tags/tf the tag pose if ROS param \c broadcastTopic is \c true.
 class Node
 {
     ros::NodeHandle _node_handle;
@@ -58,11 +64,10 @@ class Node
     std::mutex _cam_param_lock;
     vpCameraParameters _cam_parameters;
     std_msgs::Header _image_header;
-    vpImage<vpRGBa> _image;
     vpImage<unsigned char> _gray_image;
-    bool _image_new;
 
     // Classes called to detect some object in the image and then track it
+    std::shared_ptr<DetectorAprilTagWrapper> _aprilTagDetector;
     struct DetectorAndName {
       DetectorPtr detector;
       /// Name of the parent node
@@ -75,19 +80,14 @@ class Node
       {}
     };
     std::map< int, DetectorAndName > _detectors;
-    //std::unique_ptr< Tracker > _tracker;
+    std::vector<Tracker> _trackers;
     
-    std::unique_ptr <vpDisplayX> _debug_display;
+    std::unique_ptr <vpDisplay> _debug_display;
+    std::unique_ptr <image_transport::Publisher> _debug_publisher;
+
     bool _broadcast_tf;
     bool _broadcast_topic;
 
-    // Wait for the first available image
-    void waitForImage();
-
-
-    // Init the tracker with the AprilTag found previously
-    void initTracking( int id );
-    
     std::vector< ros::ServiceServer > _services;
     ros::Publisher _publisherVision;
     ros::Publisher _detection_publisher;
@@ -98,6 +98,7 @@ public:
     ~Node();
 
     /// Callback to update the camera information
+    /// \todo the camera parameters should be propagated to the downstream algos.
     void cameraInfoCallback(const sensor_msgs::CameraInfoConstPtr& camera_info);
 
     /// Callback to use the images
@@ -111,6 +112,11 @@ public:
     bool addAprilTagService( agimus_vision::AddAprilTagService::Request  &req,
                              agimus_vision::AddAprilTagService::Response &res );
 
+    /// Add object tracking service
+    /// \include srv/AddObjectTracking.srv
+    bool addObjectTracking( agimus_vision::AddObjectTracking::Request  &req,
+                            agimus_vision::AddObjectTracking::Response &res );
+
     /// Setup detection of a chessboard
     /// \include srv/SetChessboardService.srv
     bool setChessboardService( agimus_vision::SetChessboardService::Request  &req,
@@ -119,6 +125,8 @@ public:
     /// Reset the tag poses
     bool resetTagPosesService( std_srvs::Trigger::Request  &req,
                                std_srvs::Trigger::Response &res );
+
+    void initAprilTagDetector ();
     
     void spin();
 };

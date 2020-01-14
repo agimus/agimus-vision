@@ -1,11 +1,11 @@
 #ifndef __TRACKER_OBJECT__DETECTOR_CHESSBOARD_HPP__ 
 #define __TRACKER_OBJECT__DETECTOR_CHESSBOARD_HPP__ 
 
-#include "agimus_vision/tracker_object/detector.hpp"
-
 #include <visp3/detection/vpDetectorAprilTag.h>
 
 #include <opencv2/core/core.hpp>
+
+#include "agimus_vision/tracker_object/detector.hpp"
 
 namespace agimus_vision {
 namespace tracker_object {
@@ -32,7 +32,7 @@ public:
 
     bool detect();
 
-    void drawDebug( vpImage< vpRGBa > &image ) const;
+    void drawDebug( GrayImage_t& I ) const;
 };
 
 }
