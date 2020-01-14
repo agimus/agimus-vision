@@ -13,7 +13,7 @@
 #include <sensor_msgs/image_encodings.h>
 #include <image_transport/image_transport.h>
 
-#include <visp3/gui/vpDisplayX.h>
+#include <visp3/gui/vpDisplayOpenCV.h>
 #include <visp3/core/vpImageConvert.h>
 #include <visp3/core/vpImagePoint.h>
 
@@ -151,7 +151,7 @@ void Node::imageProcessing()
     // Display the tags seen by the camera
     bool debug_display = _node_handle.param<bool>("debugDisplay", false);
     if (debug_display && !_debug_display) {
-      _debug_display.reset( new vpDisplayX{} );
+      _debug_display.reset( new vpDisplayOpenCV{} );
       _debug_display->init(_gray_image);
       vpDisplay::setTitle(_gray_image, "Visual display");
     } else if (!debug_display && _debug_display) {
