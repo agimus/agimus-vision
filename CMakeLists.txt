@@ -13,6 +13,8 @@ INCLUDE(cmake/cxx11.cmake)
 COMPUTE_PROJECT_ARGS(PROJECT_ARGS LANGUAGES CXX)
 PROJECT(${PROJECT_NAME} ${PROJECT_ARGS})
 
+OPTION(COMPILE_AND_INSTALL_BINARIES "Set this to OFF to install only message and service files" ON)
+
 ## Compile as C++11, supported in ROS Kinetic and newer
 CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
 if(NOT COMPILER_SUPPORTS_CXX11)
@@ -60,23 +62,25 @@ generate_messages(
 
 catkin_package()
 
-add_subdirectory(src/tracker_object)
-##add_subdirectory(src/extrinsic_calibration)
-add_subdirectory(tests)
+if(COMPILE_AND_INSTALL_BINARIES)
+  add_subdirectory(src/tracker_object)
+  ##add_subdirectory(src/extrinsic_calibration)
+  add_subdirectory(tests)
 
-SET(${PROJECT_NAME}_HEADERS
-  include/agimus_vision/extrinsic_calibration/extrinsic_calibration.hpp
-  include/agimus_vision/extrinsic_calibration/node.hpp
+  SET(${PROJECT_NAME}_HEADERS
+    include/agimus_vision/extrinsic_calibration/extrinsic_calibration.hpp
+    include/agimus_vision/extrinsic_calibration/node.hpp
 
-  include/agimus_vision/tracker_object/detector.hpp
-  include/agimus_vision/tracker_object/detector_apriltag.hpp
-  include/agimus_vision/tracker_object/detector_chessboard.hpp
-  include/agimus_vision/tracker_object/node.hpp
-  )
+    include/agimus_vision/tracker_object/detector.hpp
+    include/agimus_vision/tracker_object/detector_apriltag.hpp
+    include/agimus_vision/tracker_object/detector_chessboard.hpp
+    include/agimus_vision/tracker_object/node.hpp
+    )
+
+  catkin_install_python(PROGRAMS scripts/simulate.py scripts/calibrate_real_joint.py scripts/publish_real_joint.py
+    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+endif(COMPILE_AND_INSTALL_BINARIES)
 
 install(DIRECTORY objects launch config data
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )
-
-catkin_install_python(PROGRAMS scripts/simulate.py scripts/calibrate_real_joint.py scripts/publish_real_joint.py
-  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
