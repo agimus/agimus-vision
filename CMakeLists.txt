@@ -38,7 +38,7 @@ find_package(catkin REQUIRED COMPONENTS
 
 find_package(OpenCV REQUIRED)
 
-ADD_REQUIRED_DEPENDENCY(visp)
+ADD_REQUIRED_DEPENDENCY("visp >= 3.2.0")
 
 add_message_files(
   FILES
