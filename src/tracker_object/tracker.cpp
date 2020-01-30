@@ -248,7 +248,17 @@ ModelBased::ModelBased(int trackerType,
 {
   tracker().setTrackerType(trackerType);
   if (!configFile.empty())
+#if VISP_VERSION_INT >= VP_VERSION_INT(3,2,1)
     tracker().loadConfigFile(configFile);
+#else
+#define _STRINGIFY(x) #x
+#define _TOSTRING(x) _STRINGIFY(x)
+    std::cerr << "Cannot load ViSP config file " << configFile << " because "
+      "installed ViSP version (" _TOSTRING(VISP_VERSION) ") is inferior to 3.2.1."
+      << std::endl;
+#undef _TOSTRING
+#undef _STRINGIFY
+#endif
 
   // camera calibration params
   tracker().setCameraParameters(cam);

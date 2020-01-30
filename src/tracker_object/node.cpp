@@ -187,7 +187,6 @@ void Node::imageProcessing()
 
         if( _broadcast_topic )
           _publisherVision.publish( cMo_msg );
-        cMo_msg.child_frame_id += _broadcast_tf_postfix;
         if( _broadcast_tf )
           broadcaster.sendTransform( cMo_msg );
       }

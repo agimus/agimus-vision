@@ -11,6 +11,7 @@ target_include_directories(${PROJECT_NAME}_tracker_object_lib SYSTEM PUBLIC
   ${catkin_INCLUDE_DIRS}
   ${OPENCV_INCLUDE_DIRS}
 )
+PKG_CONFIG_USE_DEPENDENCY(${PROJECT_NAME}_tracker_object_lib visp)
 
 target_link_libraries(${PROJECT_NAME}_tracker_object_lib
   ${catkin_LIBRARIES}
