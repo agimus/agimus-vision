@@ -182,7 +182,17 @@ State AprilTag::track(const GrayImage_t &I)
   // Pose estimation
   // TODO we should only do VIRTUAL_VS using cMt below as initial guess.
   vpHomogeneousMatrix cMt = cMo_ * detectedTag_->oMt;
+#if VISP_VERSION_INT >= VP_VERSION_INT(3,3,0)
+  vpHomogeneousMatrix cMt1, cMt2;
+  if (detector_->detector.getPose (i, detectedTag_->size, cam_, cMt1, &cMt2)) {
+    if (  vpExponentialMap::inverse(cMt.inverse() * cMt1).frobeniusNorm()
+        < vpExponentialMap::inverse(cMt.inverse() * cMt2).frobeniusNorm())
+      cMt = cMt1;
+    else
+      cMt = cMt2;
+#else
   if (detector_->detector.getPose(i, detectedTag_->size, cam_, cMt)) {
+#endif
     cMo_ = cMt * detectedTag_->oMt.inverse();
     return state_tracking;
   }
