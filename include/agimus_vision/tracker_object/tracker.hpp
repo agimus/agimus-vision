@@ -46,6 +46,19 @@ public:
   virtual void drawDebug(GrayImage_t& I ) { (void)I; }
 };
 
+class FilteringStep
+{
+public:
+  inline void reset() { lastT_ = -1; }
+  virtual void filter(const vpHomogeneousMatrix& M, const double time) = 0;
+
+  inline void getPose (vpHomogeneousMatrix& cMo) const { cMo = M_; }
+
+protected:
+  double lastT_;
+  vpHomogeneousMatrix M_;
+};
+
 /// Object tracking algorithm.
 /// It contains a InitializationStep object and a TrackingStep object.
 class Tracker
@@ -65,12 +78,17 @@ class Tracker
       name_ (name)
     {}
 
+    inline void filtering(std::shared_ptr<FilteringStep> filter)
+    {
+      filtering_ = filter;
+    }
+
     /// Process an image.
     /// If the object was not detected in the previous image, use the
     /// initialization step to detect it.
     /// If the object was detected in the previous image, use the
     /// tracking step.
-    void process (const GrayImage_t& I);
+    void process (const GrayImage_t& I, const double time);
 
     /// Whether an object pose could be computed.
     bool hasPose () const
@@ -82,7 +100,12 @@ class Tracker
     /// return \c false.
     inline void getPose (vpHomogeneousMatrix& cMo) const
     {
-      if (state_ == state_tracking) tracking_->getPose(cMo);
+      if (state_ == state_tracking) {
+        if (filtering_)
+          filtering_->getPose(cMo);
+        else
+          tracking_->getPose(cMo);
+      }
     }
 
     /// \copydoc InitializationStep::drawDebug(GrayImage_t&)
@@ -108,6 +131,7 @@ class Tracker
   private:
     std::shared_ptr<InitializationStep> initialization_;
     std::shared_ptr<TrackingStep> tracking_;
+    std::shared_ptr<FilteringStep> filtering_;
 
     State state_;
     int detectionSubsampling_;
@@ -243,6 +267,19 @@ class ModelBased : public TrackingStep
     double projErrorThr_;
 };
 
+}
+
+namespace filteringStep {
+class VelocityLowPassFirstOrder : public FilteringStep
+{
+public:
+  void filter(const vpHomogeneousMatrix& M, const double time);
+
+  VelocityLowPassFirstOrder(double cutFrequency) : f_ (cutFrequency) {}
+private:
+  const double f_;
+  vpColVector vel_;
+};
 }
 
 }

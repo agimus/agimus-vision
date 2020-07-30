@@ -2,12 +2,13 @@
 
 #include <visp3/core/vpXmlParser.h>
 #include <visp3/detection/vpDetectorAprilTag.h>
+#include <visp3/core/vpExponentialMap.h>
 #include <visp3/mbt/vpMbGenericTracker.h>
 
 namespace agimus_vision {
 namespace tracker_object {
 
-void Tracker::process (const GrayImage_t& I)
+void Tracker::process (const GrayImage_t& I, const double time)
 {
   vpHomogeneousMatrix cMo;
   if (n_ > 0) --n_;
@@ -20,11 +21,18 @@ void Tracker::process (const GrayImage_t& I)
     if (state_ == state_tracking) {
       initialization_->getPose (cMo);
       tracking_->init(I, cMo);
+      if (filtering_) filtering_->reset();
     }
   }
 
-  if (state_ == state_tracking)
+  if (state_ == state_tracking) {
     state_ = tracking_->track(I);
+    if (filtering_) {
+      vpHomogeneousMatrix cMo;
+      tracking_->getPose(cMo);
+      filtering_->filter(cMo, time);
+    }
+  }
 }
 
 void Tracker::drawDebug( GrayImage_t& I )
@@ -310,6 +318,25 @@ void ModelBased::drawDebug( GrayImage_t &I )
   vpDisplay::displayText(I, 40, 20, "State: tracking in progress", vpColor::red);
 }
 
+}
+
+namespace filteringStep {
+void VelocityLowPassFirstOrder::filter(const vpHomogeneousMatrix& M, const double time)
+{
+  if (lastT_ < 0) {
+    lastT_ = time;
+    M_ = M;
+    vel_.resize(6, true);
+    return;
+  }
+  double dt = time - lastT_;
+  const double alpha = 1 / (1 + 1/(f_*dt));
+
+  vpColVector vel = vpExponentialMap::inverse(M_.inverse() * M, dt);
+
+  vel_ = vel_ + alpha * (vel - vel_);
+  M_ = M_ * vpExponentialMap::direct(vel_, dt);
+}
 }
 
 }
