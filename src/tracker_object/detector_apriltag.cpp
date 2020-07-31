@@ -93,14 +93,19 @@ void DetectorAprilTag::drawDebug( GrayImage_t& I ) const
 
 std::vector< vpPoint > DetectorAprilTag::compute3DPoints() const
 {
-    std::vector< vpPoint > points{};
+  std::array< vpPoint, 4 > pts (compute3DPoints(_tag_size_meters));
+  return std::vector<vpPoint>(pts.begin(), pts.end());
+}
 
-    vpPoint pt{};
-    pt.set_oZ( 0.0 );
-    pt.set_oX( - _tag_size_meters / 2. ); pt.set_oY( - _tag_size_meters / 2. ); points.push_back( pt );
-    pt.set_oX( _tag_size_meters / 2. ); pt.set_oY( - _tag_size_meters / 2. ); points.push_back( pt );
-    pt.set_oX( _tag_size_meters / 2. ); pt.set_oY( _tag_size_meters / 2. ); points.push_back( pt );
-    pt.set_oX( - _tag_size_meters / 2. ); pt.set_oY( _tag_size_meters / 2. ); points.push_back( pt );
+std::array< vpPoint, 4 > DetectorAprilTag::compute3DPoints(const double size)
+{
+    std::array< vpPoint, 4 > points;
+
+    for (vpPoint& pt : points) pt.set_oZ(0.);
+    points[0].set_oX( - size / 2. ); points[0].set_oY( - size / 2. );
+    points[1].set_oX(   size / 2. ); points[1].set_oY( - size / 2. );
+    points[2].set_oX(   size / 2. ); points[2].set_oY(   size / 2. );
+    points[3].set_oX( - size / 2. ); points[3].set_oY(   size / 2. );
     
     return points;
 }

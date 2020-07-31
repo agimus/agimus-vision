@@ -60,6 +60,8 @@ public:
     {
       return _tag_id;
     }
+
+    static std::array< vpPoint, 4 > compute3DPoints(const double size);
 };
 
 }

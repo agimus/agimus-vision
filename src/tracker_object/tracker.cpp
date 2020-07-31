@@ -4,6 +4,7 @@
 #include <visp3/detection/vpDetectorAprilTag.h>
 #include <visp3/core/vpExponentialMap.h>
 #include <visp3/mbt/vpMbGenericTracker.h>
+#include <visp3/vision/vpPose.h>
 
 namespace agimus_vision {
 namespace tracker_object {
@@ -180,23 +181,26 @@ State AprilTag::track(const GrayImage_t &I)
     return state_detection;
 
   // Pose estimation
-  // TODO we should only do VIRTUAL_VS using cMt below as initial guess.
   vpHomogeneousMatrix cMt = cMo_ * detectedTag_->oMt;
-#if VISP_VERSION_INT >= VP_VERSION_INT(3,3,0)
-  vpHomogeneousMatrix cMt1, cMt2;
-  if (detector_->detector.getPose (i, detectedTag_->size, cam_, cMt1, &cMt2)) {
-    if (  vpExponentialMap::inverse(cMt.inverse() * cMt1).frobeniusNorm()
-        < vpExponentialMap::inverse(cMt.inverse() * cMt2).frobeniusNorm())
-      cMt = cMt1;
-    else
-      cMt = cMt2;
-#else
-  if (detector_->detector.getPose(i, detectedTag_->size, cam_, cMt)) {
-#endif
-    cMo_ = cMt * detectedTag_->oMt.inverse();
-    return state_tracking;
+
+  std::vector<vpImagePoint> imagePoints = detector_->detector.getPolygon (i);
+  std::array< vpPoint, 4 > points = DetectorAprilTag::compute3DPoints(detectedTag_->size);
+
+  vpPose pose;
+  // Compute the 2D coord. of the points (in meters) to match the 3D coord. for the pose estimation
+  for( unsigned int i = 0; i < points.size(); i++ ) {
+    double x{0.}, y{0.};
+    vpPixelMeterConversion::convertPointWithoutDistortion (cam_, imagePoints[i], x, y);
+
+    // x, y are the coordinates in the image plane, oX, oY, oZ in the world,
+    // and X, Y, Z in the camera ref. frame
+    points[i].set_x (x);
+    points[i].set_y (y);
+    pose.addPoint (points[i]);
   }
-  return state_detection;
+  pose.computePose(vpPose::VIRTUAL_VS, cMt);
+  cMo_ = cMt * detectedTag_->oMt.inverse();
+  return state_tracking;
 }
 
 bool AprilTag::detectTags(const GrayImage_t& I, std::size_t& i)
