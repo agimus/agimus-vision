@@ -2,6 +2,7 @@
 
 #include <visp3/vision/vpPose.h>
 #include <visp3/vision/vpPoseException.h>
+#include <visp3/core/vpConfig.h>
 #include <visp3/core/vpExponentialMap.h>
 #include <visp3/core/vpPixelMeterConversion.h>
 
@@ -116,7 +117,11 @@ bool Detector::dementhon_over_lagrange (
   if (res_cMo_dem < _residual_thr && res_cMo_lag < _residual_thr)
   {
     vpColVector diff = vpExponentialMap::inverse (cMo_dem.inverse() * cMo_lag);
+#if VISP_VERSION_INT >= VP_VERSION_INT(3,3,0)
+    if (diff.frobeniusNorm() > _pose_thr)
+#else
     if (diff.euclideanNorm() > _pose_thr)
+#endif
       ROS_WARN_STREAM_THROTTLE(1, "The computation of pose of id " << id() <<
           " is ambiguous.\n"
           "Lagrange residual: " << res_cMo_lag << "\n"

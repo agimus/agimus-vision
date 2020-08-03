@@ -215,7 +215,7 @@ int main(int argc, const char **argv)
       vpDisplay::display(I);
 
       initStep->detector()->imageReady = false;
-      algo.process (I);
+      algo.process (I, 0);
 
       algo.drawDebug (I);
 

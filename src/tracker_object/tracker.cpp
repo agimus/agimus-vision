@@ -2,12 +2,14 @@
 
 #include <visp3/core/vpXmlParser.h>
 #include <visp3/detection/vpDetectorAprilTag.h>
+#include <visp3/core/vpExponentialMap.h>
 #include <visp3/mbt/vpMbGenericTracker.h>
+#include <visp3/vision/vpPose.h>
 
 namespace agimus_vision {
 namespace tracker_object {
 
-void Tracker::process (const GrayImage_t& I)
+void Tracker::process (const GrayImage_t& I, const double time)
 {
   vpHomogeneousMatrix cMo;
   if (n_ > 0) --n_;
@@ -20,11 +22,18 @@ void Tracker::process (const GrayImage_t& I)
     if (state_ == state_tracking) {
       initialization_->getPose (cMo);
       tracking_->init(I, cMo);
+      if (filtering_) filtering_->reset();
     }
   }
 
-  if (state_ == state_tracking)
+  if (state_ == state_tracking) {
     state_ = tracking_->track(I);
+    if (filtering_) {
+      vpHomogeneousMatrix cMo;
+      tracking_->getPose(cMo);
+      filtering_->filter(cMo, time);
+    }
+  }
 }
 
 void Tracker::drawDebug( GrayImage_t& I )
@@ -172,13 +181,26 @@ State AprilTag::track(const GrayImage_t &I)
     return state_detection;
 
   // Pose estimation
-  // TODO we should only do VIRTUAL_VS using cMt below as initial guess.
   vpHomogeneousMatrix cMt = cMo_ * detectedTag_->oMt;
-  if (detector_->detector.getPose(i, detectedTag_->size, cam_, cMt)) {
-    cMo_ = cMt * detectedTag_->oMt.inverse();
-    return state_tracking;
+
+  std::vector<vpImagePoint> imagePoints = detector_->detector.getPolygon (i);
+  std::array< vpPoint, 4 > points = DetectorAprilTag::compute3DPoints(detectedTag_->size);
+
+  vpPose pose;
+  // Compute the 2D coord. of the points (in meters) to match the 3D coord. for the pose estimation
+  for( unsigned int i = 0; i < points.size(); i++ ) {
+    double x{0.}, y{0.};
+    vpPixelMeterConversion::convertPointWithoutDistortion (cam_, imagePoints[i], x, y);
+
+    // x, y are the coordinates in the image plane, oX, oY, oZ in the world,
+    // and X, Y, Z in the camera ref. frame
+    points[i].set_x (x);
+    points[i].set_y (y);
+    pose.addPoint (points[i]);
   }
-  return state_detection;
+  pose.computePose(vpPose::VIRTUAL_VS, cMt);
+  cMo_ = cMt * detectedTag_->oMt.inverse();
+  return state_tracking;
 }
 
 bool AprilTag::detectTags(const GrayImage_t& I, std::size_t& i)
@@ -310,6 +332,25 @@ void ModelBased::drawDebug( GrayImage_t &I )
   vpDisplay::displayText(I, 40, 20, "State: tracking in progress", vpColor::red);
 }
 
+}
+
+namespace filteringStep {
+void VelocityLowPassFirstOrder::filter(const vpHomogeneousMatrix& M, const double time)
+{
+  if (lastT_ < 0) {
+    lastT_ = time;
+    M_ = M;
+    vel_.resize(6, true);
+    return;
+  }
+  double dt = time - lastT_;
+  const double alpha = 1 / (1 + 1/(f_*dt));
+
+  vpColVector vel = vpExponentialMap::inverse(M_.inverse() * M, dt);
+
+  vel_ = vel_ + alpha * (vel - vel_);
+  M_ = M_ * vpExponentialMap::direct(vel_, dt);
+}
 }
 
 }

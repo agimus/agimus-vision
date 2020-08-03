@@ -169,7 +169,7 @@ void Node::imageProcessing()
 
     for( Tracker& tracker : _trackers )
     {
-      tracker.process(_gray_image);
+      tracker.process(_gray_image, timestamp.toSec());
       if (tracker.hasPose()) {
         // c: camera
         // o: object
@@ -356,11 +356,15 @@ bool Node::addObjectTracking ( agimus_vision::AddObjectTracking::Request  &req,
       tracking = modelBased;
     }
 
+    Tracker tracker (aprilTag, tracking,
+        req.object_name,
+        _node_handle.param<int>("detection_subsampling", 5));
+    double cutFrequency;
+    if (_node_handle.getParam("cut_frequency", cutFrequency))
+      tracker.filtering(std::make_shared<filteringStep::VelocityLowPassFirstOrder>(cutFrequency));
+
     std::unique_lock<std::mutex> lock(_image_lock);
-    _trackers.push_back (Tracker(aprilTag, tracking,
-          req.object_name,
-          _node_handle.param<int>("detection_subsampling", 5)
-          ));
+    _trackers.push_back (tracker);
     ROS_INFO_STREAM( "Object " << req.object_name << " now being tracked using " << req.tracker_type );
     res.success = true;
     return true;
