@@ -335,7 +335,7 @@ void ModelBased::drawDebug( GrayImage_t &I )
 }
 
 namespace filteringStep {
-void VelocityLowPassFirstOrder::filter(const vpHomogeneousMatrix& M, const double time)
+void PositionLowPassFirstOrder::filter(const vpHomogeneousMatrix& M, const double time)
 {
   if (lastT_ < 0) {
     lastT_ = time;
@@ -346,35 +346,33 @@ void VelocityLowPassFirstOrder::filter(const vpHomogeneousMatrix& M, const doubl
   double dt = time - lastT_;
   const double alpha = 1 / (1 + 1/(2*M_PI*f_*dt));
 
-  vpColVector vel = vpExponentialMap::inverse(M_.inverse() * M, dt);
-
-  vel_ = vel_ + alpha * (vel - vel_);
-  M_ = M_ * vpExponentialMap::direct(vel_, dt);
+  vpColVector vel = vpExponentialMap::inverse(M_.inverse() * M);
+  M_ = M_ * vpExponentialMap::direct(alpha * vel);
 }
-void VelocityLowPassFirstOrder::reconfigure(TrackerConfig& config, uint32_t level)
+void PositionLowPassFirstOrder::reconfigure(TrackerConfig& config, uint32_t level)
 {
   f_ = config.groups.filters.low_pass.cut_frequency;
 }
 
-void VelocityLowPassOrder::filter(const vpHomogeneousMatrix& M, const double time)
+void PositionLowPassOrder::filter(const vpHomogeneousMatrix& M, const double time)
 {
   M_ = M;
-  for (VelocityLowPassFirstOrder& f : filters_) {
+  for (PositionLowPassFirstOrder& f : filters_) {
     f.filter(M_, time);
     f.getPose(M_);
   }
   lastT_ = time;
 }
 
-void VelocityLowPassOrder::reset()
+void PositionLowPassOrder::reset()
 {
   FilteringStep::reset();
-  for (VelocityLowPassFirstOrder& f : filters_) f.reset();
+  for (PositionLowPassFirstOrder& f : filters_) f.reset();
 }
 
-void VelocityLowPassOrder::reconfigure(TrackerConfig& config, uint32_t level)
+void PositionLowPassOrder::reconfigure(TrackerConfig& config, uint32_t level)
 {
-  for (VelocityLowPassFirstOrder& f : filters_) f.reconfigure(config, level);
+  for (PositionLowPassFirstOrder& f : filters_) f.reconfigure(config, level);
 }
 }
 

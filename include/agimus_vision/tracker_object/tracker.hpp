@@ -282,12 +282,12 @@ class ModelBased : public TrackingStep
 }
 
 namespace filteringStep {
-class VelocityLowPassFirstOrder : public FilteringStep
+class PositionLowPassFirstOrder : public FilteringStep
 {
 public:
   void filter(const vpHomogeneousMatrix& M, const double time);
 
-  VelocityLowPassFirstOrder(double cutFrequency) : f_ (cutFrequency) {}
+  PositionLowPassFirstOrder(double cutFrequency) : f_ (cutFrequency) {}
 
   void reconfigure(TrackerConfig& config, uint32_t level);
 
@@ -296,19 +296,19 @@ private:
   vpColVector vel_;
 };
 
-class VelocityLowPassOrder : public FilteringStep
+class PositionLowPassOrder : public FilteringStep
 {
 public:
   void reset();
 
   void filter(const vpHomogeneousMatrix& M, const double time);
 
-  VelocityLowPassOrder(double cutFrequency, int order) : filters_(order, cutFrequency) {}
+  PositionLowPassOrder(double cutFrequency, int order) : filters_(order, cutFrequency) {}
 
   void reconfigure(TrackerConfig& config, uint32_t level);
 
 private:
-  std::vector<VelocityLowPassFirstOrder> filters_;
+  std::vector<PositionLowPassFirstOrder> filters_;
 };
 
 }

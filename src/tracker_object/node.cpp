@@ -369,7 +369,7 @@ bool Node::addObjectTracking ( agimus_vision::AddObjectTracking::Request  &req,
         _node_handle.param<int>("detection_subsampling", 5));
     double cutFrequency;
     if (_node_handle.getParam("cut_frequency", cutFrequency))
-      tracker.filtering(std::make_shared<filteringStep::VelocityLowPassOrder>(cutFrequency, 1));
+      tracker.filtering(std::make_shared<filteringStep::PositionLowPassOrder>(cutFrequency, 1));
 
     std::unique_lock<std::mutex> lock(_image_lock);
     _trackers.push_back (tracker);
