@@ -344,12 +344,37 @@ void VelocityLowPassFirstOrder::filter(const vpHomogeneousMatrix& M, const doubl
     return;
   }
   double dt = time - lastT_;
-  const double alpha = 1 / (1 + 1/(f_*dt));
+  const double alpha = 1 / (1 + 1/(2*M_PI*f_*dt));
 
   vpColVector vel = vpExponentialMap::inverse(M_.inverse() * M, dt);
 
   vel_ = vel_ + alpha * (vel - vel_);
   M_ = M_ * vpExponentialMap::direct(vel_, dt);
+}
+void VelocityLowPassFirstOrder::reconfigure(TrackerConfig& config, uint32_t level)
+{
+  f_ = config.groups.filters.low_pass.cut_frequency;
+}
+
+void VelocityLowPassOrder::filter(const vpHomogeneousMatrix& M, const double time)
+{
+  M_ = M;
+  for (VelocityLowPassFirstOrder& f : filters_) {
+    f.filter(M_, time);
+    f.getPose(M_);
+  }
+  lastT_ = time;
+}
+
+void VelocityLowPassOrder::reset()
+{
+  FilteringStep::reset();
+  for (VelocityLowPassFirstOrder& f : filters_) f.reset();
+}
+
+void VelocityLowPassOrder::reconfigure(TrackerConfig& config, uint32_t level)
+{
+  for (VelocityLowPassFirstOrder& f : filters_) f.reconfigure(config, level);
 }
 }
 

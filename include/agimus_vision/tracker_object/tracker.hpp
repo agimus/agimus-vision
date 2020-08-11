@@ -8,9 +8,16 @@
 #include <visp3/mbt/vpMbGenericTracker.h>
 
 #include <agimus_vision/tracker_object/detector_apriltag.hpp>
+#include <agimus_vision/TrackerConfig.h>
 
 namespace agimus_vision {
 namespace tracker_object {
+
+class Reconfigurable
+{
+public:
+  virtual void reconfigure(TrackerConfig& config, uint32_t level) {}
+};
 
 /// Base class for object detection.
 class InitializationStep
@@ -46,10 +53,10 @@ public:
   virtual void drawDebug(GrayImage_t& I ) { (void)I; }
 };
 
-class FilteringStep
+class FilteringStep : public Reconfigurable
 {
 public:
-  inline void reset() { lastT_ = -1; }
+  virtual void reset() { lastT_ = -1; }
   virtual void filter(const vpHomogeneousMatrix& M, const double time) = 0;
 
   inline void getPose (vpHomogeneousMatrix& cMo) const { cMo = M_; }
@@ -61,7 +68,7 @@ protected:
 
 /// Object tracking algorithm.
 /// It contains a InitializationStep object and a TrackingStep object.
-class Tracker
+class Tracker : public Reconfigurable
 {
   public:
     Tracker () : state_ (state_detection),
@@ -126,6 +133,11 @@ class Tracker
     void detectionSubsampling (int n)
     {
       detectionSubsampling_ = n;
+    }
+
+    void reconfigure(TrackerConfig& config, uint32_t level)
+    {
+      if (filtering_ /*&& filter using level */) filtering_->reconfigure(config, level);
     }
 
   private:
@@ -276,10 +288,29 @@ public:
   void filter(const vpHomogeneousMatrix& M, const double time);
 
   VelocityLowPassFirstOrder(double cutFrequency) : f_ (cutFrequency) {}
+
+  void reconfigure(TrackerConfig& config, uint32_t level);
+
 private:
-  const double f_;
+  double f_;
   vpColVector vel_;
 };
+
+class VelocityLowPassOrder : public FilteringStep
+{
+public:
+  void reset();
+
+  void filter(const vpHomogeneousMatrix& M, const double time);
+
+  VelocityLowPassOrder(double cutFrequency, int order) : filters_(order, cutFrequency) {}
+
+  void reconfigure(TrackerConfig& config, uint32_t level);
+
+private:
+  std::vector<VelocityLowPassFirstOrder> filters_;
+};
+
 }
 
 }
