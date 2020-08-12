@@ -161,8 +161,7 @@ class AprilTag : public InitializationStep, public TrackingStep
         const std::string& configFile);
 
     AprilTag (std::shared_ptr<DetectorAprilTagWrapper> detector)
-      : detector_ (detector),
-      detectedTag_ (NULL)
+      : detector_ (detector)
     {}
 
     /// Detect one of the provided AprilTag.
@@ -203,9 +202,8 @@ class AprilTag : public InitializationStep, public TrackingStep
     }
 
   private:
-    /// \param i index of tag in detector. It is valid only if the return value
-    ///        is true.
-    bool detectTags(const GrayImage_t& I, std::size_t& i);
+    /// Fill the member \c detectedTags_
+    bool detectTags(const GrayImage_t& I);
 
     struct Tag {
       vpHomogeneousMatrix oMt;
@@ -219,7 +217,11 @@ class AprilTag : public InitializationStep, public TrackingStep
 
     std::vector<Tag> tags_;
 
-    Tag* detectedTag_;
+    struct DetectedTag {
+      std::size_t i;
+      Tag* tag;
+    };
+    std::vector<DetectedTag> detectedTags_;
     vpHomogeneousMatrix cMo_;
 };
 

@@ -152,15 +152,15 @@ void AprilTag::configure(vpDetectorAprilTag& detector,
 State AprilTag::detect(const GrayImage_t& I)
 {
   // Check if the object is detected.
-  std::size_t i;
-  if (!detectTags(I, i))
+  if (!detectTags(I))
     return state_detection;
 
   // Pose estimation
   vpHomogeneousMatrix cMt;
   try {
-    if (detector_->detector.getPose(i, detectedTag_->size, cam_, cMt)) {
-      cMo_ = cMt * detectedTag_->oMt.inverse();
+    const DetectedTag& detectedTag (detectedTags_[0]);
+    if (detector_->detector.getPose(detectedTag.i, detectedTag.tag->size, cam_, cMt)) {
+      cMo_ = cMt * detectedTag.tag->oMt.inverse();
       return state_tracking;
     }
   } catch (const vpException& e) {
@@ -176,72 +176,61 @@ void AprilTag::init(const GrayImage_t &, const vpHomogeneousMatrix& cMo)
 
 State AprilTag::track(const GrayImage_t &I)
 {
-  std::size_t i;
-  if (!detectTags(I, i))
+  if (!detectTags(I))
     return state_detection;
 
   // Pose estimation
-  vpHomogeneousMatrix cMt = cMo_ * detectedTag_->oMt;
-
-  std::vector<vpImagePoint> imagePoints = detector_->detector.getPolygon (i);
-  std::array< vpPoint, 4 > points = DetectorAprilTag::compute3DPoints(detectedTag_->size);
-
   vpPose pose;
-  // Compute the 2D coord. of the points (in meters) to match the 3D coord. for the pose estimation
-  for( unsigned int i = 0; i < points.size(); i++ ) {
-    double x{0.}, y{0.};
-    vpPixelMeterConversion::convertPointWithoutDistortion (cam_, imagePoints[i], x, y);
 
-    // x, y are the coordinates in the image plane, oX, oY, oZ in the world,
-    // and X, Y, Z in the camera ref. frame
-    points[i].set_x (x);
-    points[i].set_y (y);
-    pose.addPoint (points[i]);
+  for (const DetectedTag& dtag : detectedTags_) {
+    std::vector<vpImagePoint> imagePoints = detector_->detector.getPolygon (dtag.i);
+    std::array< vpPoint, 4 > tPs = DetectorAprilTag::compute3DPoints(dtag.tag->size);
+
+    // Compute the 2D coord. of the points (in meters) to match the 3D coord. for the pose estimation
+    for( unsigned int i = 0; i < tPs.size(); i++ ) {
+      double x{0.}, y{0.};
+      vpPixelMeterConversion::convertPointWithoutDistortion (cam_, imagePoints[i], x, y);
+
+      // x, y are the coordinates in the image plane, oX, oY, oZ in the world,
+      // and X, Y, Z in the camera ref. frame
+      tPs[i].set_x (x);
+      tPs[i].set_y (y);
+
+      tPs[i].oP = dtag.tag->oMt * tPs[i].oP;
+    }
   }
-  pose.computePose(vpPose::VIRTUAL_VS, cMt);
-  cMo_ = cMt * detectedTag_->oMt.inverse();
+
+  pose.computePose(vpPose::VIRTUAL_VS, cMo_);
   return state_tracking;
 }
 
-bool AprilTag::detectTags(const GrayImage_t& I, std::size_t& i)
+bool AprilTag::detectTags(const GrayImage_t& I)
 {
   if (!detector_->detect (I))
     return false;
 
   // Check if the object is detected.
-  detectedTag_ = NULL;
-  bool ok = false;
-  for (i = 0; i < detector_->detector.getNbObjects(); i++) {
-    for (Tag& tag : tags_) {
-      ok = (tag.message == detector_->detector.getMessage(i));
-      if (ok) {
-        detectedTag_ = &tag;
-        break;
-      }
-    }
-    // TODO the pose of each detected tag should be estimated. The one with the
-    // smallest reprojection error should be kept.
-    if (ok) return true;
-  }
-  return false;
+  detectedTags_.clear();
+  for (std::size_t i = 0; i < detector_->detector.getNbObjects(); i++)
+    for (Tag& tag : tags_)
+      if (tag.message == detector_->detector.getMessage(i))
+        detectedTags_.push_back(DetectedTag({i, &tag}));
+  return !detectedTags_.empty();
 }
 
 void AprilTag::drawDebug(GrayImage_t& I)
 {
-  if(detectedTag_ == NULL) return;
+  if(detectedTags_.empty()) return;
 
   std::array< vpColor, 4 > colors{{ vpColor::red, vpColor::green, vpColor::blue, vpColor::cyan }};
 
-  for (std::size_t k = 0; k < detector_->detector.getNbObjects(); k++) {
-    if (detectedTag_->message == detector_->detector.getMessage(k)) {
-      std::vector< vpImagePoint > & points (detector_->detector.getPolygon(k));
-      for( unsigned int i{ 0 } ; i < 4 ; ++i )
-        vpDisplay::displayLine(I, points[i], points[(i+1)%3], colors[i], 3);
+  for (const DetectedTag& dtag : detectedTags_) {
+    std::vector< vpImagePoint > & points (detector_->detector.getPolygon(dtag.i));
+    for( unsigned int i{ 0 } ; i < 4 ; ++i )
+      vpDisplay::displayLine(I, points[i], points[(i+1)%3], colors[i], 3);
 
-      vpDisplay::displayFrame(I, cMo_, cam_, detectedTag_->size * 2, vpColor::none );
-    }
   }
-
+  vpDisplay::displayFrame(I, cMo_, cam_, detectedTags_[0].tag->size * 2, vpColor::none );
 }
 
 bool AprilTag::addTag (int id, double size, vpHomogeneousMatrix oMt)
