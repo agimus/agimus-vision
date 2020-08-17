@@ -197,6 +197,7 @@ State AprilTag::track(const GrayImage_t &I)
       tPs[i].set_y (y);
 
       tPs[i].oP = dtag.tag->oMt * tPs[i].oP;
+      pose.addPoint(tPs[i]);
     }
   }
 
