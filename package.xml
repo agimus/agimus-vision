@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package format="2">
   <name>agimus_vision</name>
-  <version>0.1.0</version>
+  <version>1.0.1</version>
   <description>The agimus_vision package</description>
   <maintainer email="anicolin@laas.fr">Alexis Nicolin</maintainer>
   <license>BSD-2</license>
