@@ -34,6 +34,7 @@ find_package(catkin REQUIRED COMPONENTS
   tf2_ros
   tf2_geometry_msgs
   image_transport
+  dynamic_reconfigure
 )
 
 find_package(OpenCV REQUIRED)
@@ -59,6 +60,9 @@ generate_messages(
   geometry_msgs
 )
 
+generate_dynamic_reconfigure_options(
+  cfg/Tracker.cfg
+)
 
 catkin_package()
 

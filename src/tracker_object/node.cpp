@@ -106,10 +106,18 @@ Node::Node()
 
     _publisherVision = _node_handle.advertise< geometry_msgs::TransformStamped >( "/agimus/vision/tags", 100 );
     _detection_publisher = _node_handle.advertise< agimus_vision::ImageDetectionResult >( "/agimus/vision/detection", 100 );
+
+    tracker_reconfigure.setCallback(boost::bind(&Node::trackerReconfigureCallback, this, _1, _2));
 }
 
 Node::~Node()
 {}
+
+void Node::trackerReconfigureCallback(TrackerConfig &config, uint32_t level)
+{
+  for( Tracker& tracker : _trackers )
+    tracker.reconfigure(config, level);
+}
 
 void Node::cameraInfoCallback(const sensor_msgs::CameraInfoConstPtr& camera_info)
 {
@@ -361,7 +369,7 @@ bool Node::addObjectTracking ( agimus_vision::AddObjectTracking::Request  &req,
         _node_handle.param<int>("detection_subsampling", 5));
     double cutFrequency;
     if (_node_handle.getParam("cut_frequency", cutFrequency))
-      tracker.filtering(std::make_shared<filteringStep::VelocityLowPassFirstOrder>(cutFrequency));
+      tracker.filtering(std::make_shared<filteringStep::PositionLowPassOrder>(cutFrequency, 1));
 
     std::unique_lock<std::mutex> lock(_image_lock);
     _trackers.push_back (tracker);

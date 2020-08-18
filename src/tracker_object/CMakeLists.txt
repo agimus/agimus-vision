@@ -5,7 +5,7 @@ add_library(${PROJECT_NAME}_tracker_object_lib STATIC
   node.cpp
   tracker.cpp
   ) 
-add_dependencies(${PROJECT_NAME}_tracker_object_lib ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(${PROJECT_NAME}_tracker_object_lib ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_gencfg)
 target_compile_options(${PROJECT_NAME}_tracker_object_lib PUBLIC -std=c++11)
 target_include_directories(${PROJECT_NAME}_tracker_object_lib SYSTEM PUBLIC
   ${catkin_INCLUDE_DIRS}

@@ -11,6 +11,9 @@
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
 
+#include <dynamic_reconfigure/server.h>
+#include <agimus_vision/TrackerConfig.h>
+
 #include <std_srvs/Trigger.h>
 #include <geometry_msgs/TransformStamped.h>
 #include <sensor_msgs/CameraInfo.h>
@@ -91,6 +94,7 @@ class Node
     std::vector< ros::ServiceServer > _services;
     ros::Publisher _publisherVision;
     ros::Publisher _detection_publisher;
+    dynamic_reconfigure::Server<TrackerConfig> tracker_reconfigure;
 
 public:
     Node();
@@ -103,6 +107,9 @@ public:
 
     /// Callback to use the images
     void frameCallback(const sensor_msgs::ImageConstPtr& image);
+
+    /// Reconfiguration callback
+    void trackerReconfigureCallback(TrackerConfig &config, uint32_t level);
 
     /// Process an image.
     void imageProcessing ();
