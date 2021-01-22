@@ -16,7 +16,7 @@ namespace tracker_object {
 class Reconfigurable
 {
 public:
-  virtual void reconfigure(TrackerConfig& config, uint32_t level) {}
+  virtual void reconfigure(TrackerConfig& /*config*/, uint32_t /*level*/) {}
 };
 
 /// Base class for object detection.

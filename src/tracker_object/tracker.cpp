@@ -29,7 +29,6 @@ void Tracker::process (const GrayImage_t& I, const double time)
   if (state_ == state_tracking) {
     state_ = tracking_->track(I);
     if (filtering_) {
-      vpHomogeneousMatrix cMo;
       tracking_->getPose(cMo);
       filtering_->filter(cMo, time);
     }
@@ -339,7 +338,7 @@ void PositionLowPassFirstOrder::filter(const vpHomogeneousMatrix& M, const doubl
   vpColVector vel = vpExponentialMap::inverse(M_.inverse() * M);
   M_ = M_ * vpExponentialMap::direct(alpha * vel);
 }
-void PositionLowPassFirstOrder::reconfigure(TrackerConfig& config, uint32_t level)
+void PositionLowPassFirstOrder::reconfigure(TrackerConfig& config, uint32_t)
 {
   f_ = config.groups.filters.low_pass.cut_frequency;
 }
