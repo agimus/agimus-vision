@@ -60,6 +60,43 @@ bool DetectorAprilTag::detect()
     return false;
 }
 
+void DetectorAprilTag::detectOnDepthImage()
+{
+    std::vector<std::vector<vpImagePoint>> tags_corners = detector.getPolygon();
+    std::vector<int> tags_id = detector.getTagsId();
+    std::map<int, double> tags_size;
+    tags_size[-1] = tagSize; // Default tag size
+    std::vector<std::vector<vpPoint>> tags_points3d = detector.getTagsPoints3D(tags_id, tags_size);
+    for (int i = 0; i < tags_corners.size(); i++)
+    {
+        vpHomogeneousMatrix cMo;
+        double confidence_index;
+        if (vpPose::computePlanarObjectPoseFromRGBD(depthMap, tags_corners[i], colorCamInfoVisp, tags_points3d[i], cMo, &confidence_index))
+        {
+            if (confidence_index > 0.8)
+            {
+                // std::cout << "DISPLAY " << std::endl;
+                vpDisplay::displayFrame(vRGBFusionImage, cMo, colorCamInfoVisp, tagSize / 2, vpColor::none, 3);
+            }
+            else if (confidence_index > 0.25)
+            {
+                vpDisplay::displayFrame(vRGBFusionImage, cMo, colorCamInfoVisp, tagSize / 2, vpColor::orange, 3);
+            }
+            else
+            {
+                vpDisplay::displayFrame(vRGBFusionImage, cMo, colorCamInfoVisp, tagSize / 2, vpColor::red, 3);
+            }
+
+            std::cout << "Tag ID:" << tags_id[i] << std::endl;
+            cMo.print();
+            std::cout << std::endl;
+            std::stringstream ss;
+            ss << "Tag id " << tags_id[i] << " confidence: " << confidence_index;
+            vpDisplay::displayText(vRGBFusionImage, 35 + i * 15, 20, ss.str(), vpColor::red);
+        }
+    }
+}
+
 void DetectorAprilTag::drawDebug( GrayImage_t& I ) const
 {
     if( _state == no_object )

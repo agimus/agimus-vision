@@ -50,9 +50,11 @@ class Node
 
     // Names of the topics sending the images and infos
     std::string _image_topic;
+    std::string _depth_image_topic;
     std::string _camera_info_topic;
     
     ros::Subscriber _image_sub;
+    ros::Subscriber _depth_image_sub;
     ros::Subscriber _camera_info_sub;
     tf2_ros::Buffer _tf_buffer;
     tf2_ros::TransformListener _tf_listener;
@@ -68,7 +70,9 @@ class Node
     vpCameraParameters _cam_parameters;
     std_msgs::Header _image_header;
     vpImage<unsigned char> _gray_image;
-
+    vpImage<uint16_t> _depth_image;
+    vpImage<unsigned char> _depth_image_8bit;
+    
     // Classes called to detect some object in the image and then track it
     std::shared_ptr<DetectorAprilTagWrapper> _aprilTagDetector;
     struct DetectorAndName {
@@ -96,6 +100,10 @@ class Node
     ros::Publisher _detection_publisher;
     dynamic_reconfigure::Server<TrackerConfig> tracker_reconfigure;
 
+    bool _bGotDepth;
+
+    //Get message from ros and convert to vpImage, although the range is 0-255 
+   
 public:
     Node();
 
@@ -107,6 +115,9 @@ public:
 
     /// Callback to use the images
     void frameCallback(const sensor_msgs::ImageConstPtr& image);
+
+     /// Callback to use the depth images
+    void depthFrameCallback(const sensor_msgs::ImageConstPtr& image);
 
     /// Reconfiguration callback
     void trackerReconfigureCallback(TrackerConfig &config, uint32_t level);
@@ -136,6 +147,8 @@ public:
     void initAprilTagDetector ();
     
     void spin();
+
+    vpImage<uint16_t> toVispImageFromDepth(const sensor_msgs::Image& src);
 };
 
 }

@@ -52,6 +52,8 @@ public:
 
     bool analyseImage( const GrayImage_t& I );
 
+    void detectOnDepthImage();
+
     bool detect();
 
     void drawDebug( GrayImage_t& I ) const;
