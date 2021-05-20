@@ -5,6 +5,7 @@
 #include "agimus_vision/tracker_object/fwd.hpp"
 
 #include <visp3/detection/vpDetectorAprilTag.h>
+#include <visp3/vision/vpPose.h>
 
 namespace agimus_vision {
 namespace tracker_object {
@@ -52,7 +53,7 @@ public:
 
     bool analyseImage( const GrayImage_t& I );
 
-    void detectOnDepthImage();
+    void detectOnDepthImage(const DepthMap_t& I);
 
     bool detect();
 

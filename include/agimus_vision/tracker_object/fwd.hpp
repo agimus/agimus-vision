@@ -20,6 +20,9 @@ enum State {
 typedef vpImage< unsigned char > GrayImage_t;
 typedef vpImage< vpRGBa > RGBaImage_t;
 
+// depth map image
+typedef vpImage<float> DepthMap_t;
+
 struct DetectorAprilTagWrapper;
 typedef std::shared_ptr<DetectorAprilTagWrapper> DetectorAprilTagWrapperPtr;
 
