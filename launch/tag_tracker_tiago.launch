@@ -1,7 +1,7 @@
 <launch>
   <arg name="output" default="log"/>
   <arg name="state_estimation" default="false"/>
-  <arg name="standalone" default="false"/>
+  <arg name="standalone" default="true"/>
 
 
   <!-- Setup vision -->

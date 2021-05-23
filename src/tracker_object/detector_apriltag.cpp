@@ -75,15 +75,17 @@ void DetectorAprilTag::detectOnDepthImage(const DepthMap_t& depthMap)
         {
             if (confidence_index > 0.8)
             {
-                // std::cout << "DISPLAY " << std::endl;
+                std::cout << "DISPLAY " << std::endl;
                 // vpDisplay::displayFrame(vRGBFusionImage, cMo, colorCamInfoVisp, tagSize / 2, vpColor::none, 3);
             }
             else if (confidence_index > 0.25)
             {
+                std::cout << "DISPLAY2 " << std::endl;
                 // vpDisplay::displayFrame(vRGBFusionImage, cMo, colorCamInfoVisp, tagSize / 2, vpColor::orange, 3);
             }
             else
             {
+                std::cout << "DISPLAY3 " << std::endl;
                 // vpDisplay::displayFrame(vRGBFusionImage, cMo, colorCamInfoVisp, tagSize / 2, vpColor::red, 3);
             }
 

@@ -35,6 +35,8 @@ protected:
 
     bool computePose();
 
+    bool computePosetOnDepthImage(const DepthMap_t& I);
+
     /// Compare the pose computed used vpPose::DEMENTHON_VIRTUAL_VS and
     /// vpPose::LAGRANGE_VIRTUAL_VS.
     /// If both pose have a projection residual below _residual_thr and
