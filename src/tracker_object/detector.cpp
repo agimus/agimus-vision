@@ -18,12 +18,18 @@ Detector::Detector( const vpCameraParameters &cam_parameters )
   , _pose_thr (1e-3)
 {}
 
-bool Detector::analyseImage( const vpImage< unsigned char > &/*gray_image*/ )
+bool Detector::analyseImage( const vpImage< unsigned char > &gray_image )
 {
     return false;
 }
 
 bool Detector::detect()
+{
+    return false;
+}
+
+
+bool Detector::detectOnDepthImage(const DepthMap_t& I)
 {
     return false;
 }
@@ -34,6 +40,7 @@ void Detector::drawDebug( GrayImage_t&/*I*/ ) const
 // -----
 // PRIVATE
 // -----
+
 
 
 

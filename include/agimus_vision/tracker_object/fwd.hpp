@@ -21,7 +21,7 @@ typedef vpImage< unsigned char > GrayImage_t;
 typedef vpImage< vpRGBa > RGBaImage_t;
 
 // depth map image
-typedef vpImage<u_int16_t> DepthMap_t;
+typedef vpImage<uint16_t> DepthMap_t;
 
 struct DetectorAprilTagWrapper;
 typedef std::shared_ptr<DetectorAprilTagWrapper> DetectorAprilTagWrapperPtr;
