@@ -9,7 +9,7 @@
 namespace agimus_vision {
 namespace tracker_object {
 
-void Tracker::process (const GrayImage_t& I, const double time)
+void Tracker::process (const GrayImage_t& I, const DepthMap_t& D, const double time)
 {
   vpHomogeneousMatrix cMo;
   if (n_ > 0) --n_;
@@ -27,7 +27,7 @@ void Tracker::process (const GrayImage_t& I, const double time)
   }
 
   if (state_ == state_tracking) {
-    state_ = tracking_->track(I);
+    state_ = tracking_->track(I, D);
     if (filtering_) {
       vpHomogeneousMatrix cMo;
       tracking_->getPose(cMo);
@@ -174,7 +174,7 @@ void AprilTag::init(const GrayImage_t &, const vpHomogeneousMatrix& cMo)
   cMo_ = cMo;
 }
 
-State AprilTag::track(const GrayImage_t &I)
+State AprilTag::track(const GrayImage_t &I, const vpImage<uint16_t> &D)
 {
   if (!detectTags(I))
     return state_detection;
@@ -182,28 +182,130 @@ State AprilTag::track(const GrayImage_t &I)
   // Pose estimation
   vpPose pose;
 
-  for (const DetectedTag& dtag : detectedTags_) {
-    std::vector<vpImagePoint> imagePoints = detector_->detector.getPolygon (dtag.i);
-    std::array< vpPoint, 4 > tPs = DetectorAprilTag::compute3DPoints(dtag.tag->size);
-
-    // Compute the 2D coord. of the points (in meters) to match the 3D coord. for the pose estimation
-    for( unsigned int i = 0; i < tPs.size(); i++ ) {
-      double x{0.}, y{0.};
-      vpPixelMeterConversion::convertPointWithoutDistortion (cam_, imagePoints[i], x, y);
-
-      // x, y are the coordinates in the image plane, oX, oY, oZ in the world,
-      // and X, Y, Z in the camera ref. frame
-      tPs[i].set_x (x);
-      tPs[i].set_y (y);
-
-      tPs[i].oP = dtag.tag->oMt * tPs[i].oP;
-      pose.addPoint(tPs[i]);
-    }
+  vpImage<float> depthMap;
+  // vpImageConvert::createDepthHistogram(D, depthMap);
+  depthMap.resize(D.getHeight(), D.getWidth());
+       for (unsigned int i = 0; i < D.getHeight(); i++) {
+           for (unsigned int j = 0; j < D.getWidth(); j++) {
+               if (D[i][j]) {
+                   float Z = D[i][j] * 1.0;
+                   depthMap[i][j] = Z;
+               } else {
+                   depthMap[i][j] = 0;
+               }
+           }
   }
+ 
 
-  pose.computePose(vpPose::VIRTUAL_VS, cMo_);
+  // for (const DetectedTag& dtag : detectedTags_) {
+    // std::vector<vpImagePoint> imagePoints = detector_->detector.getPolygon (dtag.i);
+    std::vector<int> tags_id = detector_->detector.getTagsId();
+    std::vector<std::vector<vpImagePoint>> tags_corners = detector_->detector.getPolygon();
+    std::map<int, double> tags_size;
+    tags_size[-1] = 0.1725; //temp hardcoded
+    // std::array< vpPoint, 4 > tPs = DetectorAprilTag::compute3DPoints(dtag.tag->size);
+    // double tag_size = dtag.tag->size;
+
+    std::vector<std::vector<vpPoint>> tags_points3d = detector_->detector.getTagsPoints3D(tags_id, tags_size);
+    for (int i = 0; i < tags_corners.size(); i++)
+    {
+        vpHomogeneousMatrix cMo;
+        double confidence_index;
+        if (vpPose::computePlanarObjectPoseFromRGBD(depthMap, tags_corners[i], cam_, tags_points3d[i], cMo, &confidence_index))
+        {
+            if (confidence_index > 0.8)
+            {
+                std::cout << "DISPLAY " << std::endl;
+                // vpDisplay::displayFrame(vRGBFusionImage, cMo, colorCamInfoVisp, tagSize / 2, vpColor::none, 3);
+            }
+            else if (confidence_index > 0.25)
+            {
+                std::cout << "DISPLAY2 " << std::endl;
+                // vpDisplay::displayFrame(vRGBFusionImage, cMo, colorCamInfoVisp, tagSize / 2, vpColor::orange, 3);
+            }
+            else
+            {
+                std::cout << "DISPLAY3 " << std::endl;
+                // vpDisplay::displayFrame(vRGBFusionImage, cMo, colorCamInfoVisp, tagSize / 2, vpColor::red, 3);
+            }
+
+            std::cout << "Tag ID:" << tags_id[i] << std::endl;
+            // cMo.print();
+            // std::cout << std::endl;
+            // std::stringstream ss;
+            // ss << "Tag id " << tags_id[i] << " confidence: " << confidence_index;
+            // vpDisplay::displayText(vRGBFusionImage, 35 + i * 15, 20, ss.str(), vpColor::red);
+        }
+    }
+
+  
+  
+  
+  
+  
+  
+  
+  
+  //   std::vector<vpImagePoint> imagePoints = detector_->detector.getPolygon (dtag.i);
+  //   std::array< vpPoint, 4 > tPs = DetectorAprilTag::compute3DPoints(dtag.tag->size);
+
+  //   // Compute the 2D coord. of the points (in meters) to match the 3D coord. for the pose estimation
+  //   for( unsigned int i = 0; i < tPs.size(); i++ ) {
+  //     double x{0.}, y{0.};
+  //     vpPixelMeterConversion::convertPointWithoutDistortion (cam_, imagePoints[i], x, y);
+
+  //     // x, y are the coordinates in the image plane, oX, oY, oZ in the world,
+  //     // and X, Y, Z in the camera ref. frame
+  //     tPs[i].set_x (x);
+  //     tPs[i].set_y (y);
+
+  //     tPs[i].oP = dtag.tag->oMt * tPs[i].oP;
+  //     pose.addPoint(tPs[i]);
+  //   }
+  // }
+
+  // pose.computePose(vpPose::VIRTUAL_VS, cMo_);
   return state_tracking;
 }
+// bool Detector::computePosetOnDepthImage(const DepthMap_t& depthMap)
+// {
+//     std::vector<std::vector<vpImagePoint>> tags_corners = _detector->detector.getPolygon();
+//     std::vector<int> tags_id = _detector->detector.getTagsId();
+//     std::map<int, double> tags_size;
+//     tags_size[-1] = _tag_size_meters; // Default tag size
+//     std::vector<std::vector<vpPoint>> tags_points3d = _detector->detector.getTagsPoints3D(tags_id, tags_size);
+//     for (int i = 0; i < tags_corners.size(); i++)
+//     {
+//         vpHomogeneousMatrix cMo;
+//         double confidence_index;
+//         if (vpPose::computePlanarObjectPoseFromRGBD(depthMap, tags_corners[i], _cam_parameters, tags_points3d[i], cMo, &confidence_index))
+//         {
+//             if (confidence_index > 0.8)
+//             {
+//                 std::cout << "DISPLAY " << std::endl;
+//                 // vpDisplay::displayFrame(vRGBFusionImage, cMo, colorCamInfoVisp, tagSize / 2, vpColor::none, 3);
+//             }
+//             else if (confidence_index > 0.25)
+//             {
+//                 std::cout << "DISPLAY2 " << std::endl;
+//                 // vpDisplay::displayFrame(vRGBFusionImage, cMo, colorCamInfoVisp, tagSize / 2, vpColor::orange, 3);
+//             }
+//             else
+//             {
+//                 std::cout << "DISPLAY3 " << std::endl;
+//                 // vpDisplay::displayFrame(vRGBFusionImage, cMo, colorCamInfoVisp, tagSize / 2, vpColor::red, 3);
+//             }
+
+//             std::cout << "Tag ID:" << tags_id[i] << std::endl;
+//             // cMo.print();
+//             // std::cout << std::endl;
+//             // std::stringstream ss;
+//             // ss << "Tag id " << tags_id[i] << " confidence: " << confidence_index;
+//             // vpDisplay::displayText(vRGBFusionImage, 35 + i * 15, 20, ss.str(), vpColor::red);
+//         }
+//     }
+    
+// }
 
 bool AprilTag::detectTags(const GrayImage_t& I)
 {

@@ -291,7 +291,7 @@ namespace agimus_vision
 
       for (Tracker &tracker : _trackers)
       {
-        tracker.process(_gray_image, timestamp.toSec());
+        tracker.process(_gray_image, _depth_image, timestamp.toSec());
         if (tracker.hasPose())
         {
           // c: camera
@@ -481,15 +481,15 @@ namespace agimus_vision
           return true;
         }
 
-        std::shared_ptr<trackingStep::ModelBased> modelBased(
-            new trackingStep::ModelBased(type,
-                                         req.model_path,
-                                         _cam_parameters,
-                                         _node_handle.param<double>("tracker/projection_error_threshold", 40),
-                                         req.visp_xml_config_file));
-        modelBased->tracker().setDisplayFeatures(true);
+        // std::shared_ptr<trackingStep::ModelBased> modelBased(
+        //     new trackingStep::ModelBased(type,
+        //                                  req.model_path,
+        //                                  _cam_parameters,
+        //                                  _node_handle.param<double>("tracker/projection_error_threshold", 40),
+        //                                  req.visp_xml_config_file));
+        // modelBased->tracker().setDisplayFeatures(true);
 
-        tracking = modelBased;
+        // tracking = modelBased;
       }
 
       Tracker tracker(aprilTag, tracking,

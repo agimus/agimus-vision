@@ -53,7 +53,7 @@ public:
 
     bool analyseImage( const GrayImage_t& I );
 
-    void detectOnDepthImage(const DepthMap_t& I);
+    // void detectOnDepthImage(const DepthMap_t& I);
 
     bool detect();
 

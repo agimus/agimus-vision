@@ -69,7 +69,7 @@ catkin_package()
 if(COMPILE_AND_INSTALL_BINARIES)
   add_subdirectory(src/tracker_object)
   ##add_subdirectory(src/extrinsic_calibration)
-  add_subdirectory(tests)
+  # add_subdirectory(tests)
 
   SET(${PROJECT_NAME}_HEADERS
     include/agimus_vision/extrinsic_calibration/extrinsic_calibration.hpp
