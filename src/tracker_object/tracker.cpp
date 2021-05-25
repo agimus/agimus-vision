@@ -157,7 +157,7 @@ State AprilTag::detect(const GrayImage_t& I)
 
   // Pose estimation
   vpHomogeneousMatrix cMt;
-  try {
+  try { 
     const DetectedTag& detectedTag (detectedTags_[0]);
     if (detector_->detector.getPose(detectedTag.i, detectedTag.tag->size, cam_, cMt)) {
       cMo_ = cMt * detectedTag.tag->oMt.inverse();
@@ -176,6 +176,8 @@ void AprilTag::init(const GrayImage_t &, const vpHomogeneousMatrix& cMo)
 
 State AprilTag::track(const GrayImage_t &I, const vpImage<uint16_t> &D)
 {
+
+  ROS_WARN_STREAM("AprilTagTrack");
   if (!detectTags(I))
     return state_detection;
 
@@ -209,9 +211,9 @@ State AprilTag::track(const GrayImage_t &I, const vpImage<uint16_t> &D)
     std::vector<std::vector<vpPoint>> tags_points3d = detector_->detector.getTagsPoints3D(tags_id, tags_size);
     for (int i = 0; i < tags_corners.size(); i++)
     {
-        vpHomogeneousMatrix cMo;
+        // vpHomogeneousMatrix cMo;
         double confidence_index;
-        if (vpPose::computePlanarObjectPoseFromRGBD(depthMap, tags_corners[i], cam_, tags_points3d[i], cMo, &confidence_index))
+        if (vpPose::computePlanarObjectPoseFromRGBD(depthMap, tags_corners[i], cam_, tags_points3d[i], cMo_, &confidence_index))
         {
             if (confidence_index > 0.8)
             {
