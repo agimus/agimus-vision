@@ -117,10 +117,14 @@ namespace agimus_vision
                         _state = newly_acquired_object;
                     else
                         _state = already_acquired_object;
+                    ROS_WARN_STREAM("Before");
+                    ROS_WARN_STREAM(_cMo);
                     if (vpPose::computePlanarObjectPoseFromRGBD(depthMap, tags_corners[i], _cam_parameters, tags_points3d[i], _cMo, &confidence_index))
                     {
                         ROS_WARN_STREAM("tag:" + std::to_string(tags_id[i]) + ". Confidence: " + std::to_string(confidence_index));
-
+                        _error = pose.computeResidual( _cMo );
+                        ROS_WARN_STREAM("After");
+                        ROS_WARN_STREAM(_cMo);
                         return true;
                     }
                 }
