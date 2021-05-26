@@ -6,7 +6,7 @@
 
 #include <visp3/detection/vpDetectorAprilTag.h>
 #include <visp3/vision/vpPose.h>
-
+#include <visp3/core/vpImageConvert.h>
 namespace agimus_vision {
 namespace tracker_object {
 

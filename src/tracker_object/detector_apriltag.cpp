@@ -61,91 +61,71 @@ namespace agimus_vision
 
         bool DetectorAprilTag::detectOnDepthImage(const DepthMap_t &D)
         {
+            _image_points.clear();
             ROS_WARN_STREAM("detector_apriltag::detectOnDepthImage");
-            ROS_WARN_STREAM("depth image height:" + D.getHeight());
+            // ROS_WARN_STREAM(std::to_string(_cam_parameters.get_px()));
+            //  ROS_WARN_STREAM("depth image height:" + std::to_string(D.getHeight()));
             vpPose pose;
             vpImage<float> depthMap;
-
+            vpImage<unsigned char> depthImage;
+            vpImageConvert::convert(D, depthImage);
+            ROS_WARN_STREAM("depth image height:" + std::to_string(depthImage.getHeight()));
             std::vector<int> tags_id = _detector->detector.getTagsId();
             std::vector<std::vector<vpImagePoint>> tags_corners = _detector->detector.getPolygon();
             std::map<int, double> tags_size;
-            tags_size[-1] = 0.1725; //temp hardcoded
+            tags_size[-1] = _tag_size_meters;
+            // ROS_WARN_STREAM("tags_corners size:" + std::to_string(tags_corners.size()));
 
-
-            for (std::vector<int>::const_iterator i = tags_id.begin(); i != tags_id.end(); ++i)
-                ROS_WARN_STREAM(*i);
+            // for (std::vector<int>::const_iterator i = tags_id.begin(); i != tags_id.end(); ++i)
+            //     ROS_WARN_STREAM(*i);
 
             std::vector<std::vector<vpPoint>> tags_points3d = _detector->detector.getTagsPoints3D(tags_id, tags_size);
+            // ROS_WARN_STREAM("tags_points3d size:" + std::to_string(tags_points3d.size()));
             for (int i = 0; i < tags_corners.size(); i++)
             {
                 vpHomogeneousMatrix cMo;
+                double confidence_index;
                 std::string tag = " " + std::to_string(_tag_id);
                 std::string msg = _detector->detector.getMessage(i);
+                ROS_WARN_STREAM("tag:" + tag + ". msg:" + msg);
+
                 size_t stag = tag.size();
                 size_t smsg = msg.size();
 
-                // Checks whether msg ends with tag
+                // // Checks whether msg ends with tag
                 if (stag <= smsg && msg.compare(smsg - stag, stag, tag) == 0)
                 {
-                    double confidence_index;
 
-                    if (_state == no_object)
-                        _state = newly_acquired_object;
-                    else
-                        _state = already_acquired_object;
-
-                    depthMap.resize(D.getHeight(), D.getWidth());
-                    for (unsigned int i = 0; i < D.getHeight(); i++)
+                    depthMap.resize(depthImage.getHeight(), depthImage.getWidth());
+                    for (unsigned int i = 0; i < depthImage.getHeight(); i++)
                     {
-                        for (unsigned int j = 0; j < D.getWidth(); j++)
+                        for (unsigned int j = 0; j < depthImage.getWidth(); j++)
                         {
-                            if (D[i][j])
+                            if (depthImage[i][j])
                             {
-                                float Z = D[i][j] * 1.0;
+                                float Z = depthImage[i][j] * 1.0;
                                 depthMap[i][j] = Z;
-                                std::cout << Z << " ";
                             }
                             else
                             {
-                                std::cout << 0 << " ";
                                 depthMap[i][j] = 0;
                             }
                         }
                     }
-
-                    if (vpPose::computePlanarObjectPoseFromRGBD(depthMap, tags_corners[i], _cam_parameters, tags_points3d[i], cMo, &confidence_index))
+                    _image_points = _detector->detector.getPolygon(i);
+                    if (_state == no_object)
+                        _state = newly_acquired_object;
+                    else
+                        _state = already_acquired_object;
+                    if (vpPose::computePlanarObjectPoseFromRGBD(depthMap, tags_corners[i], _cam_parameters, tags_points3d[i], _cMo, &confidence_index))
                     {
-                        // if (confidence_index > 0.8)
-                        // {
-                        //     std::cout << "DISPLAY " << std::endl;
-                        //     // vpDisplay::displayFrame(vRGBFusionImage, cMo, colorCamInfoVisp, tagSize / 2, vpColor::none, 3);
-                        // }
-                        // else if (confidence_index > 0.25)
-                        // {
-                        //     std::cout << "DISPLAY2 " << std::endl;
-                        //     // vpDisplay::displayFrame(vRGBFusionImage, cMo, colorCamInfoVisp, tagSize / 2, vpColor::orange, 3);
-                        // }
-                        // else
-                        // {
-                        //     std::cout << "DISPLAY3 " << std::endl;
-                        //     // vpDisplay::displayFrame(vRGBFusionImage, cMo, colorCamInfoVisp, tagSize / 2, vpColor::red, 3);
-                        // }
+                        ROS_WARN_STREAM("tag:" + std::to_string(tags_id[i]) + ". Confidence: " + std::to_string(confidence_index));
 
-                        // std::cout << "Tag ID:" << tags_id[i] << std::endl;
                         return true;
-                        // cMo.print();
-                        // std::cout << std::endl;
-                        // std::stringstream ss;
-                        // ss << "Tag id " << tags_id[i] << " confidence: " << confidence_index;
-                        // vpDisplay::displayText(vRGBFusionImage, 35 + i * 15, 20, ss.str(), vpColor::red);
                     }
-
-                    // Pose could not be computed.
-                    _state = no_object;
-                    return false;
                 }
             }
-
+            _state = no_object;
             return false;
         }
 
