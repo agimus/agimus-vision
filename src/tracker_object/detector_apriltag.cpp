@@ -103,7 +103,7 @@ namespace agimus_vision
                         {
                             if (depthImage[i][j])
                             {
-                                float Z = depthImage[i][j] * 1.0;
+                                float Z = depthImage[i][j] * 0.1;
                                 depthMap[i][j] = Z;
                             }
                             else
