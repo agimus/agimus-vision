@@ -205,13 +205,12 @@ namespace agimus_vision
       State AprilTag::track(const GrayImage_t &I, const vpImage<uint16_t> &D)
       {
 
-        ROS_WARN_STREAM("AprilTagTrack");
         if (!detectTags(I))
           return state_detection;
 
         // Pose estimation
         std::map<int, double> tags_size;
-        tags_size[-1] = 0.1725;
+        tags_size[-1] = 0.064;
 
         vpPose pose;
         vpImage<float> depthMap;
@@ -235,31 +234,17 @@ namespace agimus_vision
           }
         }
 
-        ROS_WARN_STREAM("Tracker depth image height:" + std::to_string(depthImage.getHeight()));
-
         std::vector<int> tags_id = detector_->detector.getTagsId();
         std::vector<std::vector<vpPoint>> tags_points3d = detector_->detector.getTagsPoints3D(tags_id, tags_size);
         std::vector<std::vector<vpImagePoint>> tags_corners = detector_->detector.getPolygon();
-        
 
-        // ROS_WARN_STREAM("tags_corners size:" + std::to_string(tags_corners.size()));
-
-        // for (std::vector<int>::const_iterator i = tags_id.begin(); i != tags_id.end(); ++i)
-        //     ROS_WARN_STREAM(*i);
-
-        // ROS_WARN_STREAM("tags_points3d size:" + std::to_string(tags_points3d.size()));
         for (int i = 0; i < tags_corners.size(); i++)
         {
           vpHomogeneousMatrix cMo;
           double confidence_index;
-
-          // ROS_WARN_STREAM("Before");
-          // ROS_WARN_STREAM(_cMo);
           if (vpPose::computePlanarObjectPoseFromRGBD(depthMap, tags_corners[i], cam_, tags_points3d[i], cMo_, &confidence_index))
           {
             ROS_WARN_STREAM("tag:" + std::to_string(tags_id[i]) + ". Confidence: " + std::to_string(confidence_index));
-            // ROS_WARN_STREAM("After");
-            // ROS_WARN_STREAM(_cMo);
           }
         }
 
@@ -286,14 +271,21 @@ namespace agimus_vision
           return;
 
         std::array<vpColor, 4> colors{{vpColor::red, vpColor::green, vpColor::blue, vpColor::cyan}};
-
-        for (const DetectedTag &dtag : detectedTags_)
+         //Fix Bug: while tracking, if tag is out of view, agimus_vision stopped => add try catch 
+        try
         {
-          std::vector<vpImagePoint> &points(detector_->detector.getPolygon(dtag.i));
-          for (unsigned int i{0}; i < 4; ++i)
-            vpDisplay::displayLine(I, points[i], points[(i + 1) % 3], colors[i], 3);
+          for (const DetectedTag &dtag : detectedTags_)
+          {
+            std::vector<vpImagePoint> &points(detector_->detector.getPolygon(dtag.i));
+            for (unsigned int i{0}; i < 4; ++i)
+              vpDisplay::displayLine(I, points[i], points[(i + 1) % 3], colors[i], 3);
+          }
+          vpDisplay::displayFrame(I, cMo_, cam_, detectedTags_[0].tag->size * 2, vpColor::none);
         }
-        vpDisplay::displayFrame(I, cMo_, cam_, detectedTags_[0].tag->size * 2, vpColor::none);
+        catch (vpException e)
+        {
+          std::cout << "Catch an exception: " << e << std::endl;
+        }
       }
 
       bool AprilTag::addTag(int id, double size, vpHomogeneousMatrix oMt)

@@ -160,7 +160,6 @@ namespace agimus_vision
 
     void Node::depthFrameCallback(const sensor_msgs::ImageConstPtr &image)
     {
-      // ROS_WARN_STREAM("node::depthFrameCallback_start");
       std::unique_lock<std::mutex> lock(_image_lock, std::try_to_lock);
       if (!lock.owns_lock())
         return;
@@ -175,18 +174,10 @@ namespace agimus_vision
 
       try
       {
-        // ROS_WARN_STREAM("node::depthFrameCallback_try");
         if ("16UC1" == image->encoding)
         {
-          // cv_bridge::CvImagePtr cvPtr;
-          // cvPtr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::TYPE_8UC1);
-          // vpImageConvert::convert(cvPtr->image, _depth_image);
           _depth_image = toVispImageFromDepth(*image);
-          // ROS_WARN_STREAM("depth image height:" + std::to_string(_depth_image.getHeight()));
           _bGotDepth = true;
-          // imageProcessing();
-
-          
         }
       }
       catch (const std::exception &e)
@@ -197,7 +188,6 @@ namespace agimus_vision
 
     vpImage<uint16_t> Node::toVispImageFromDepth(const sensor_msgs::Image &src)
     {
-      //    using sensor_msgs::image_encodings::TYPE_16UC1;
 
       vpImage<uint16_t> dst(src.height, src.width);
 
@@ -205,7 +195,6 @@ namespace agimus_vision
       {
 
         memcpy(dst.bitmap, &(src.data[0]), dst.getHeight() * src.step * sizeof(unsigned char));
-        //         memcpy(dst.bitmap, &(src.data[0]), dst.getHeight() * src.step * sizeof(uint16_t));
       }
       return dst;
     }
@@ -246,7 +235,6 @@ namespace agimus_vision
         {
           // c: camera
           // o: object
-          ROS_WARN_STREAM("AprilTagTrack_Node_Tracker");
           vpHomogeneousMatrix cMo_vp;
           tracker.getPose(cMo_vp);
           tf2::Transform cMo_tf;
@@ -273,7 +261,6 @@ namespace agimus_vision
 
       for (auto &detector : _detectors)
       {
-        ROS_WARN_STREAM("AprilTagTrack_Node_Detector");
         const DetectorPtr &detector_ptr = detector.second.detector;
         const std::string &parent_name = detector.second.parent_name;
         const std::string &object_name = detector.second.object_name;

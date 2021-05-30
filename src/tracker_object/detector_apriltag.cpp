@@ -28,7 +28,6 @@ namespace agimus_vision
         bool DetectorAprilTag::detect()
         {
             _image_points.clear();
-            ROS_WARN_STREAM("detector_apriltag::detect");
             for (size_t i{0}; i < _detector->detector.getNbObjects(); ++i)
             {
                 std::string tag = " " + std::to_string(_tag_id);
@@ -62,22 +61,15 @@ namespace agimus_vision
         bool DetectorAprilTag::detectOnDepthImage(const DepthMap_t &D)
         {
             _image_points.clear();
-            ROS_WARN_STREAM("detector_apriltag::detectOnDepthImage");
-            // ROS_WARN_STREAM(std::to_string(_cam_parameters.get_px()));
-            //  ROS_WARN_STREAM("depth image height:" + std::to_string(D.getHeight()));
             vpPose pose;
             vpImage<float> depthMap;
             vpImage<unsigned char> depthImage;
             vpImageConvert::convert(D, depthImage);
-            ROS_WARN_STREAM("depth image height:" + std::to_string(depthImage.getHeight()));
             std::vector<int> tags_id = _detector->detector.getTagsId();
             std::vector<std::vector<vpImagePoint>> tags_corners = _detector->detector.getPolygon();
             std::map<int, double> tags_size;
             tags_size[-1] = _tag_size_meters;
-            // ROS_WARN_STREAM("tags_corners size:" + std::to_string(tags_corners.size()));
-
-            // for (std::vector<int>::const_iterator i = tags_id.begin(); i != tags_id.end(); ++i)
-            //     ROS_WARN_STREAM(*i);
+           
 
             depthMap.resize(depthImage.getHeight(), depthImage.getWidth());
             for (unsigned int i = 0; i < depthImage.getHeight(); i++)
@@ -97,14 +89,12 @@ namespace agimus_vision
             }
 
             std::vector<std::vector<vpPoint>> tags_points3d = _detector->detector.getTagsPoints3D(tags_id, tags_size);
-            // ROS_WARN_STREAM("tags_points3d size:" + std::to_string(tags_points3d.size()));
             for (int i = 0; i < tags_corners.size(); i++)
             {
                 vpHomogeneousMatrix cMo;
                 double confidence_index;
                 std::string tag = " " + std::to_string(_tag_id);
                 std::string msg = _detector->detector.getMessage(i);
-                ROS_WARN_STREAM("tag:" + tag + ". msg:" + msg);
 
                 size_t stag = tag.size();
                 size_t smsg = msg.size();
@@ -118,14 +108,9 @@ namespace agimus_vision
                         _state = newly_acquired_object;
                     else
                         _state = already_acquired_object;
-                    ROS_WARN_STREAM("Before");
-                    ROS_WARN_STREAM(_cMo);
                     if (vpPose::computePlanarObjectPoseFromRGBD(depthMap, tags_corners[i], _cam_parameters, tags_points3d[i], _cMo, &confidence_index))
                     {
-                        ROS_WARN_STREAM("tag:" + std::to_string(tags_id[i]) + ". Confidence: " + std::to_string(confidence_index));
                         _error = pose.computeResidual(_cMo);
-                        ROS_WARN_STREAM("After");
-                        ROS_WARN_STREAM(_cMo);
                         return true;
                     }
                 }
