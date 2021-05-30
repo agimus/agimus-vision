@@ -79,6 +79,23 @@ namespace agimus_vision
             // for (std::vector<int>::const_iterator i = tags_id.begin(); i != tags_id.end(); ++i)
             //     ROS_WARN_STREAM(*i);
 
+            depthMap.resize(depthImage.getHeight(), depthImage.getWidth());
+            for (unsigned int i = 0; i < depthImage.getHeight(); i++)
+            {
+                for (unsigned int j = 0; j < depthImage.getWidth(); j++)
+                {
+                    if (depthImage[i][j])
+                    {
+                        float Z = depthImage[i][j] * 0.1;
+                        depthMap[i][j] = Z;
+                    }
+                    else
+                    {
+                        depthMap[i][j] = 0;
+                    }
+                }
+            }
+
             std::vector<std::vector<vpPoint>> tags_points3d = _detector->detector.getTagsPoints3D(tags_id, tags_size);
             // ROS_WARN_STREAM("tags_points3d size:" + std::to_string(tags_points3d.size()));
             for (int i = 0; i < tags_corners.size(); i++)
@@ -96,22 +113,6 @@ namespace agimus_vision
                 if (stag <= smsg && msg.compare(smsg - stag, stag, tag) == 0)
                 {
 
-                    depthMap.resize(depthImage.getHeight(), depthImage.getWidth());
-                    for (unsigned int i = 0; i < depthImage.getHeight(); i++)
-                    {
-                        for (unsigned int j = 0; j < depthImage.getWidth(); j++)
-                        {
-                            if (depthImage[i][j])
-                            {
-                                float Z = depthImage[i][j] * 0.1;
-                                depthMap[i][j] = Z;
-                            }
-                            else
-                            {
-                                depthMap[i][j] = 0;
-                            }
-                        }
-                    }
                     _image_points = _detector->detector.getPolygon(i);
                     if (_state == no_object)
                         _state = newly_acquired_object;
@@ -122,7 +123,7 @@ namespace agimus_vision
                     if (vpPose::computePlanarObjectPoseFromRGBD(depthMap, tags_corners[i], _cam_parameters, tags_points3d[i], _cMo, &confidence_index))
                     {
                         ROS_WARN_STREAM("tag:" + std::to_string(tags_id[i]) + ". Confidence: " + std::to_string(confidence_index));
-                        _error = pose.computeResidual( _cMo );
+                        _error = pose.computeResidual(_cMo);
                         ROS_WARN_STREAM("After");
                         ROS_WARN_STREAM(_cMo);
                         return true;
