@@ -202,6 +202,9 @@ namespace agimus_vision
         cMo_ = cMo;
       }
 
+     
+
+
       State AprilTag::track(const GrayImage_t &I, const vpImage<uint16_t> &D)
       {
 
@@ -233,18 +236,22 @@ namespace agimus_vision
             }
           }
         }
-
         std::vector<int> tags_id = detector_->detector.getTagsId();
         std::vector<std::vector<vpPoint>> tags_points3d = detector_->detector.getTagsPoints3D(tags_id, tags_size);
         std::vector<std::vector<vpImagePoint>> tags_corners = detector_->detector.getPolygon();
-
-        for (int i = 0; i < tags_corners.size(); i++)
-        {
-          vpHomogeneousMatrix cMo;
-          double confidence_index;
-          if (vpPose::computePlanarObjectPoseFromRGBD(depthMap, tags_corners[i], cam_, tags_points3d[i], cMo_, &confidence_index))
+       
+        // ROS_WARN_STREAM("tags_points3d size : " + std::to_string(tags_points3d.size())) ;
+        // ROS_WARN_STREAM("tags_corners size : " + std::to_string(tags_corners.size())) ;
+        // ROS_WARN_STREAM("detectedTags_ size : " + std::to_string(detectedTags_.size())) ;
+       
+        for (int j=0; j < detectedTags_.size(); j++){
+          for (int i = 0; i < tags_corners.size(); i++)
           {
-            ROS_WARN_STREAM("tag:" + std::to_string(tags_id[i]) + ". Confidence: " + std::to_string(confidence_index));
+            double confidence_index;
+            
+            if (detectedTags_[j].tag->id == tags_id[i])
+              if (vpPose::computePlanarObjectPoseFromRGBD(depthMap, tags_corners[i], cam_, tags_points3d[i], cMo_, &confidence_index))
+                ROS_WARN_STREAM("tag:" + std::to_string(tags_id[i]) + ". Confidence: " + std::to_string(confidence_index));
           }
         }
 

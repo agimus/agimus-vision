@@ -18,7 +18,7 @@
         <param name="broadcastTf"     value="true" />
         <param name="broadcastTfPostfix" value="_tf" />
         <param name="objectType" value="apriltag" />
-        <param name="cameraFrame" value="xtion_optical_frame" />
+        <param name="cameraFrame" value="camera_link" />
     </node>
 
     <!-- Table -->
