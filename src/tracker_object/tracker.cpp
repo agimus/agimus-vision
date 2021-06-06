@@ -250,8 +250,16 @@ namespace agimus_vision
             double confidence_index;
             
             if (detectedTags_[j].tag->id == tags_id[i])
+            {
+              for( unsigned int k = 0; k < tags_points3d[i].size(); k++ ) 
+                tags_points3d[i][k].oP = detectedTags_[j].tag->oMt * tags_points3d[i][k].oP;
+              
               if (vpPose::computePlanarObjectPoseFromRGBD(depthMap, tags_corners[i], cam_, tags_points3d[i], cMo_, &confidence_index))
+              {
+                // cMo_ = detectedTags_[j].tag->oMt * cMo_;
                 ROS_WARN_STREAM("tag:" + std::to_string(tags_id[i]) + ". Confidence: " + std::to_string(confidence_index));
+              }
+            }
           }
         }
 
