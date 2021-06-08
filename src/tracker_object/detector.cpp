@@ -46,6 +46,7 @@ void Detector::drawDebug( GrayImage_t&/*I*/ ) const
 
 bool Detector::computePose()
 {
+     ROS_WARN_STREAM("computePose");
     if( _state == no_object )
         return false;
 

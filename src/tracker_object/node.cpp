@@ -230,6 +230,7 @@ namespace agimus_vision
 
       for (Tracker &tracker : _trackers)
       {
+        // tracker.process(_gray_image, _depth_image, timestamp.toSec());
         tracker.process(_gray_image, _depth_image, timestamp.toSec());
         if (tracker.hasPose())
         {

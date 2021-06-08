@@ -25,8 +25,10 @@ namespace agimus_vision
             return _detector->detect(gray_image);
         }
 
-        bool DetectorAprilTag::detect()
+        bool DetectorAprilTag::detect() 
         {
+            //  std::cout << "detect" << std::endl;
+            // ROS_WARN_STREAM("detect");
             _image_points.clear();
             for (size_t i{0}; i < _detector->detector.getNbObjects(); ++i)
             {
@@ -34,7 +36,6 @@ namespace agimus_vision
                 std::string msg = _detector->detector.getMessage(i);
                 size_t stag = tag.size();
                 size_t smsg = msg.size();
-
                 // Checks whether msg ends with tag
                 if (stag <= smsg && msg.compare(smsg - stag, stag, tag) == 0)
                 {
@@ -60,6 +61,9 @@ namespace agimus_vision
 
         bool DetectorAprilTag::detectOnDepthImage(const DepthMap_t &D)
         {
+
+            // ROS_WARN_STREAM("detectOnDepthImage");
+            
             _image_points.clear();
             vpPose pose;
             vpImage<float> depthMap;
@@ -110,7 +114,9 @@ namespace agimus_vision
                         _state = already_acquired_object;
                     if (vpPose::computePlanarObjectPoseFromRGBD(depthMap, tags_corners[i], _cam_parameters, tags_points3d[i], _cMo, &confidence_index))
                     {
-                        _error = pose.computeResidual(_cMo);
+                        // _error = pose.computeResidual(_cMo);
+                        //  ROS_WARN_STREAM("Detect _cMo:");
+                        //  ROS_WARN_STREAM(_cMo);
                         return true;
                     }
                 }

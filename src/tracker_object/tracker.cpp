@@ -175,11 +175,13 @@ namespace agimus_vision
 
       State AprilTag::detect(const GrayImage_t &I)
       {
+        // ROS_WARN_STREAM("AprilTag::detect");
         // Check if the object is detected.
         if (!detectTags(I))
           return state_detection;
 
         // Pose estimation
+         ROS_WARN_STREAM("AprilTag::detect Pose estimation");
         vpHomogeneousMatrix cMt;
         try
         {
@@ -187,6 +189,13 @@ namespace agimus_vision
           if (detector_->detector.getPose(detectedTag.i, detectedTag.tag->size, cam_, cMt))
           {
             cMo_ = cMt * detectedTag.tag->oMt.inverse();
+            //  cMo_ = cMt;
+            // ROS_WARN_STREAM("cMo_:");
+            // ROS_WARN_STREAM(cMo_);
+            // ROS_WARN_STREAM("cMt:");
+            // ROS_WARN_STREAM(cMt);
+            // ROS_WARN_STREAM("detectedTag:");
+            // ROS_WARN_STREAM(detectedTag.tag->oMt.inverse());
             return state_tracking;
           }
         }
@@ -213,7 +222,9 @@ namespace agimus_vision
 
         // Pose estimation
         std::map<int, double> tags_size;
-        tags_size[-1] = 0.064;
+
+        //Todo: assign value to tag size, not hardcode
+        tags_size[-1] = 0.0845;
 
         vpPose pose;
         vpImage<float> depthMap;
@@ -257,6 +268,8 @@ namespace agimus_vision
               if (vpPose::computePlanarObjectPoseFromRGBD(depthMap, tags_corners[i], cam_, tags_points3d[i], cMo_, &confidence_index))
               {
                 // cMo_ = detectedTags_[j].tag->oMt * cMo_;
+                // ROS_WARN_STREAM("Tracking cMo_:");
+                // ROS_WARN_STREAM(cMo_);
                 ROS_WARN_STREAM("tag:" + std::to_string(tags_id[i]) + ". Confidence: " + std::to_string(confidence_index));
               }
             }
