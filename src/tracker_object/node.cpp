@@ -115,7 +115,6 @@ namespace agimus_vision
 
       tracker_reconfigure.setCallback(boost::bind(&Node::trackerReconfigureCallback, this, _1, _2));
 
-      _bGotDepth = false;
     }
 
     Node::~Node()
@@ -177,7 +176,6 @@ namespace agimus_vision
         if ("16UC1" == image->encoding)
         {
           _depth_image = toVispImageFromDepth(*image);
-          _bGotDepth = true;
         }
       }
       catch (const std::exception &e)

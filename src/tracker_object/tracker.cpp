@@ -223,14 +223,16 @@ namespace agimus_vision
         // Pose estimation
         std::map<int, double> tags_size;
 
-        //Todo: assign value to tag size, not hardcode
-        tags_size[-1] = 0.0845;
+        //default tag size
+        tags_size[-1] = 0.04;
+
+        
 
         vpPose pose;
         vpImage<float> depthMap;
         vpImage<unsigned char> depthImage;
         vpImageConvert::convert(D, depthImage);
-
+        float depthScale = 0.1;
         depthMap.resize(depthImage.getHeight(), depthImage.getWidth());
         for (unsigned int i = 0; i < depthImage.getHeight(); i++)
         {
@@ -238,7 +240,7 @@ namespace agimus_vision
           {
             if (depthImage[i][j])
             {
-              float Z = depthImage[i][j] * 0.1;
+              float Z = depthImage[i][j] * depthScale;
               depthMap[i][j] = Z;
             }
             else
@@ -250,11 +252,29 @@ namespace agimus_vision
         std::vector<int> tags_id = detector_->detector.getTagsId();
         std::vector<std::vector<vpPoint>> tags_points3d = detector_->detector.getTagsPoints3D(tags_id, tags_size);
         std::vector<std::vector<vpImagePoint>> tags_corners = detector_->detector.getPolygon();
-       
-        // ROS_WARN_STREAM("tags_points3d size : " + std::to_string(tags_points3d.size())) ;
-        // ROS_WARN_STREAM("tags_corners size : " + std::to_string(tags_corners.size())) ;
-        // ROS_WARN_STREAM("detectedTags_ size : " + std::to_string(detectedTags_.size())) ;
-       
+      
+
+      // std::vector<int>::iterator it;
+      // for (it = tags_id.begin(); it != tags_id.end(); it++)
+      // {
+      //   // ROS_WARN_STREAM(*it);
+      //   // tags_size[*it] = 0.0845;
+      //   if (*it == 100 || *it == 101)
+      //     tags_size[*it]= 0.0415;
+      //   else 
+      //     tags_size[*it]= 0.0845;
+
+      // }
+
+          //  tags_size[100] = 0.0415;
+          //  tags_size[101] = 0.0415;
+          //  tags_size[230] = 0.04;
+          //  tags_size[23] = 0.04;
+
+      for (const auto& [key, value] : tags_size) {
+        ROS_WARN_STREAM(std::to_string(key) + " = " + std::to_string(value));
+      }
+
         for (int j=0; j < detectedTags_.size(); j++){
           for (int i = 0; i < tags_corners.size(); i++)
           {
@@ -267,9 +287,6 @@ namespace agimus_vision
               
               if (vpPose::computePlanarObjectPoseFromRGBD(depthMap, tags_corners[i], cam_, tags_points3d[i], cMo_, &confidence_index))
               {
-                // cMo_ = detectedTags_[j].tag->oMt * cMo_;
-                // ROS_WARN_STREAM("Tracking cMo_:");
-                // ROS_WARN_STREAM(cMo_);
                 ROS_WARN_STREAM("tag:" + std::to_string(tags_id[i]) + ". Confidence: " + std::to_string(confidence_index));
               }
             }

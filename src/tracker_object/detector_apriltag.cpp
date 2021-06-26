@@ -73,7 +73,7 @@ namespace agimus_vision
             std::vector<std::vector<vpImagePoint>> tags_corners = _detector->detector.getPolygon();
             std::map<int, double> tags_size;
             tags_size[-1] = _tag_size_meters;
-           
+            float depthScale = (float) 0.1;
 
             depthMap.resize(depthImage.getHeight(), depthImage.getWidth());
             for (unsigned int i = 0; i < depthImage.getHeight(); i++)
@@ -82,7 +82,7 @@ namespace agimus_vision
                 {
                     if (depthImage[i][j])
                     {
-                        float Z = depthImage[i][j] * 0.1;
+                        float Z = depthImage[i][j] * depthScale;
                         depthMap[i][j] = Z;
                     }
                     else
@@ -91,6 +91,17 @@ namespace agimus_vision
                     }
                 }
             }
+
+            // tags_size.insert( std::pair<int,double>(100,0.0415)); 
+            // tags_size.insert( std::pair<int,double>(101,0.0415));
+           tags_size[100] = 0.0415;
+           tags_size[101] = 0.0415;
+           tags_size[230] = 0.04;
+           tags_size[23] = 0.04;
+
+           for (const auto& [key, value] : tags_size) {
+        ROS_WARN_STREAM(std::to_string(key) + " = " + std::to_string(value));
+      }
 
             std::vector<std::vector<vpPoint>> tags_points3d = _detector->detector.getTagsPoints3D(tags_id, tags_size);
             for (int i = 0; i < tags_corners.size(); i++)

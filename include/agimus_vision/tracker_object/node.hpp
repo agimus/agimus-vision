@@ -100,7 +100,6 @@ class Node
     ros::Publisher _detection_publisher;
     dynamic_reconfigure::Server<TrackerConfig> tracker_reconfigure;
 
-    bool _bGotDepth;
 
     //Get message from ros and convert to vpImage, although the range is 0-255 
    
