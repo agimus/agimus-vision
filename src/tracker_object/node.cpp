@@ -23,6 +23,9 @@
 
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
+
+using namespace message_filters;
+
 namespace agimus_vision
 {
   namespace tracker_object
@@ -79,12 +82,23 @@ namespace agimus_vision
       cameraInfoCallback(cam_info_msg);
 
       // Use those parameters to create the camera
-      _image_sub = _node_handle.subscribe(_image_topic, 1,
-                                          &Node::frameCallback, this);
+      // _image_sub = _node_handle.subscribe(_image_topic, 1,
+                                          // &Node::frameCallback, this);
       _camera_info_sub = _node_handle.subscribe(_camera_info_topic, 1,
                                                 &Node::cameraInfoCallback, this);
-      _depth_image_sub = _node_handle.subscribe(_depth_image_topic, 1,
-                                                &Node::depthFrameCallback, this);
+      // _depth_image_sub = _node_handle.subscribe(_depth_image_topic, 1,
+                                                // &Node::depthFrameCallback, this);
+
+
+      _image_sub.subscribe(_node_handle, _image_topic, 1);
+      // ROS_INFO("Subcribed to the topic: %s", strImage_sub_topic.c_str());
+
+      _deph_image_sub.subscribe(_node_handle, _depth_image_topic, 1);
+      // ROS_INFO("Subcribed to the topic: %s", strDepthImage_sub_topic.c_str());
+
+      sync_.reset(new Sync(MySyncPolicy(10), _image_sub, _deph_image_sub));
+      sync_->registerCallback(boost::bind(&Node::frameCallback, this, _1, _2));
+      
       // TF node of the camera seeing the tags
       _node_handle.param<std::string>("cameraFrame", _tf_camera_node, "rgbd_rgb_optical_frame");
 
@@ -133,7 +147,8 @@ namespace agimus_vision
       _cam_parameters = visp_bridge::toVispCameraParameters(*camera_info);
     }
 
-    void Node::frameCallback(const sensor_msgs::ImageConstPtr &image)
+    // void Node::frameCallback(const sensor_msgs::ImageConstPtr &image)
+    void Node::frameCallback(const sensor_msgs::ImageConstPtr &image, const sensor_msgs::ImageConstPtr &depth_image)
     {
       std::unique_lock<std::mutex> lock(_image_lock, std::try_to_lock);
       if (!lock.owns_lock())
@@ -153,36 +168,50 @@ namespace agimus_vision
       }
 
       _gray_image = visp_bridge::toVispImage(*image);
-
-      imageProcessing();
-    }
-
-    void Node::depthFrameCallback(const sensor_msgs::ImageConstPtr &image)
-    {
-      std::unique_lock<std::mutex> lock(_image_lock, std::try_to_lock);
-      if (!lock.owns_lock())
-        return;
-      if (_image_header.seq + 1 < image->header.seq)
-      {
-        // Delayed ignores the first _image_header which isn't initialized.
-        ROS_INFO_DELAYED_THROTTLE(5, "Some images were dropped.");
-      }
-
-      _image_header = image->header;
-      
-
+      ROS_WARN_STREAM("Got Color Image");
       try
       {
-        if ("16UC1" == image->encoding)
+        if ("16UC1" == depth_image->encoding)
         {
-          _depth_image = toVispImageFromDepth(*image);
+          _depth_image = toVispImageFromDepth(*depth_image);
+          ROS_WARN_STREAM("Got Depth Image");
+          
         }
       }
       catch (const std::exception &e)
       {
         std::cerr << e.what() << '\n';
       }
+
+      imageProcessing();
     }
+
+    // void Node::depthFrameCallback(const sensor_msgs::ImageConstPtr &image)
+    // {
+    //   std::unique_lock<std::mutex> lock(_image_lock, std::try_to_lock);
+    //   if (!lock.owns_lock())
+    //     return;
+    //   if (_image_header.seq + 1 < image->header.seq)
+    //   {
+    //     // Delayed ignores the first _image_header which isn't initialized.
+    //     ROS_INFO_DELAYED_THROTTLE(5, "Some images were dropped.");
+    //   }
+
+    //   _image_header = image->header;
+      
+
+    //   try
+    //   {
+    //     if ("16UC1" == image->encoding)
+    //     {
+    //       _depth_image = toVispImageFromDepth(*image);
+    //     }
+    //   }
+    //   catch (const std::exception &e)
+    //   {
+    //     std::cerr << e.what() << '\n';
+    //   }
+    // }
 
     vpImage<uint16_t> Node::toVispImageFromDepth(const sensor_msgs::Image &src)
     {

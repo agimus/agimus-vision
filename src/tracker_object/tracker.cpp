@@ -224,15 +224,21 @@ namespace agimus_vision
         std::map<int, double> tags_size;
 
         //default tag size
-        tags_size[-1] = 0.04;
-
+        tags_size[-1]  = 0.0845;
+        tags_size[6]   = 0.0845;
+        tags_size[15]  = 0.0845;
+        tags_size[1]   = 0.0845;
+        tags_size[100]  = 0.0415;
+        tags_size[101]  = 0.0415;
+        tags_size[230] = 0.04;
+        tags_size[23]  = 0.04;
         
 
         vpPose pose;
         vpImage<float> depthMap;
         vpImage<unsigned char> depthImage;
         vpImageConvert::convert(D, depthImage);
-        float depthScale = 0.1;
+        float depthScale = (float) 0.00025;
         depthMap.resize(depthImage.getHeight(), depthImage.getWidth());
         for (unsigned int i = 0; i < depthImage.getHeight(); i++)
         {
@@ -254,26 +260,6 @@ namespace agimus_vision
         std::vector<std::vector<vpImagePoint>> tags_corners = detector_->detector.getPolygon();
       
 
-      // std::vector<int>::iterator it;
-      // for (it = tags_id.begin(); it != tags_id.end(); it++)
-      // {
-      //   // ROS_WARN_STREAM(*it);
-      //   // tags_size[*it] = 0.0845;
-      //   if (*it == 100 || *it == 101)
-      //     tags_size[*it]= 0.0415;
-      //   else 
-      //     tags_size[*it]= 0.0845;
-
-      // }
-
-          //  tags_size[100] = 0.0415;
-          //  tags_size[101] = 0.0415;
-          //  tags_size[230] = 0.04;
-          //  tags_size[23] = 0.04;
-
-      for (const auto& [key, value] : tags_size) {
-        ROS_WARN_STREAM(std::to_string(key) + " = " + std::to_string(value));
-      }
 
         for (int j=0; j < detectedTags_.size(); j++){
           for (int i = 0; i < tags_corners.size(); i++)
@@ -288,6 +274,7 @@ namespace agimus_vision
               if (vpPose::computePlanarObjectPoseFromRGBD(depthMap, tags_corners[i], cam_, tags_points3d[i], cMo_, &confidence_index))
               {
                 ROS_WARN_STREAM("tag:" + std::to_string(tags_id[i]) + ". Confidence: " + std::to_string(confidence_index));
+                // return state_tracking;
               }
             }
           }

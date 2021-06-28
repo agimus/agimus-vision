@@ -30,6 +30,14 @@
 #include "agimus_vision/AddObjectTracking.h"
 #include "agimus_vision/SetChessboardService.h"
 
+//Use message filters to sync color and depth image 
+#include "tf/message_filter.h"
+#include <message_filters/subscriber.h>
+#include <message_filters/time_synchronizer.h>
+#include <message_filters/sync_policies/approximate_time.h>
+#include <message_filters/sync_policies/exact_time.h>
+
+
 class vpDisplay;
 namespace image_transport { class Publisher; }
 
@@ -53,11 +61,29 @@ class Node
     std::string _depth_image_topic;
     std::string _camera_info_topic;
     
-    ros::Subscriber _image_sub;
-    ros::Subscriber _depth_image_sub;
+    // ros::Subscriber _image_sub;
+    // ros::Subscriber _depth_image_sub;
+
+    //Change to add depth
+    message_filters::Subscriber<sensor_msgs::Image> _image_sub;      
+    message_filters::Subscriber<sensor_msgs::Image> _deph_image_sub; 
+    
+    typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::Image> MySyncPolicy;
+    typedef message_filters::Synchronizer<MySyncPolicy> Sync;
+    boost::shared_ptr<Sync> sync_;
+    
+    sensor_msgs::ImageConstPtr rgbImage;
+    sensor_msgs::ImageConstPtr depthImage;
+
+    
+    //end change to add depth
+
+
     ros::Subscriber _camera_info_sub;
     tf2_ros::Buffer _tf_buffer;
     tf2_ros::TransformListener _tf_listener;
+
+
 
     // Names of the publication TF nodes   
     std::string _tf_camera_node;
@@ -113,10 +139,10 @@ public:
     void cameraInfoCallback(const sensor_msgs::CameraInfoConstPtr& camera_info);
 
     /// Callback to use the images
-    void frameCallback(const sensor_msgs::ImageConstPtr& image);
+    void frameCallback(const sensor_msgs::ImageConstPtr &image, const sensor_msgs::ImageConstPtr &depth_image);
 
      /// Callback to use the depth images
-    void depthFrameCallback(const sensor_msgs::ImageConstPtr& image);
+    // void depthFrameCallback(const sensor_msgs::ImageConstPtr& image);
 
     /// Reconfiguration callback
     void trackerReconfigureCallback(TrackerConfig &config, uint32_t level);
