@@ -10,11 +10,8 @@
         output="$(arg output)"
         name="tracker"
         >
-        <!-- <param name="imageTopic"      value="/camera/color/image_raw" />
-        <param name="cameraInfoTopic" value="/camera/color/camera_info" />
-        <param name="depthImageTopic" value="/camera/aligned_depth_to_color/image_raw" /> -->
 
-          <param name="imageTopic"      value="/xtion/rgb/image_raw" />
+        <param name="imageTopic"      value="/xtion/rgb/image_raw" />
         <param name="cameraInfoTopic" value="/xtion/rgb/camera_info" />
         <param name="depthImageTopic" value="/xtion/depth/image_raw" />
         <param name="debugDisplay"    value="true" />

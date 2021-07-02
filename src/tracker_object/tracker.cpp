@@ -5,6 +5,7 @@
 #include <visp3/core/vpExponentialMap.h>
 #include <visp3/mbt/vpMbGenericTracker.h>
 #include <visp3/vision/vpPose.h>
+#include <string>
 
 namespace agimus_vision
 {
@@ -175,13 +176,11 @@ namespace agimus_vision
 
       State AprilTag::detect(const GrayImage_t &I)
       {
-        // ROS_WARN_STREAM("AprilTag::detect");
         // Check if the object is detected.
         if (!detectTags(I))
           return state_detection;
 
         // Pose estimation
-         ROS_WARN_STREAM("AprilTag::detect Pose estimation");
         vpHomogeneousMatrix cMt;
         try
         {
@@ -189,13 +188,6 @@ namespace agimus_vision
           if (detector_->detector.getPose(detectedTag.i, detectedTag.tag->size, cam_, cMt))
           {
             cMo_ = cMt * detectedTag.tag->oMt.inverse();
-            //  cMo_ = cMt;
-            // ROS_WARN_STREAM("cMo_:");
-            // ROS_WARN_STREAM(cMo_);
-            // ROS_WARN_STREAM("cMt:");
-            // ROS_WARN_STREAM(cMt);
-            // ROS_WARN_STREAM("detectedTag:");
-            // ROS_WARN_STREAM(detectedTag.tag->oMt.inverse());
             return state_tracking;
           }
         }
@@ -227,9 +219,10 @@ namespace agimus_vision
         tags_size[-1]  = 0.0845;
         tags_size[6]   = 0.0845;
         tags_size[15]  = 0.0845;
+        tags_size[13]  = 0.0845;
         tags_size[1]   = 0.0845;
-        tags_size[100]  = 0.0415;
-        tags_size[101]  = 0.0415;
+        tags_size[100]  = 0.04;
+        tags_size[101]  = 0.04;
         tags_size[230] = 0.04;
         tags_size[23]  = 0.04;
         
@@ -238,7 +231,7 @@ namespace agimus_vision
         vpImage<float> depthMap;
         vpImage<unsigned char> depthImage;
         vpImageConvert::convert(D, depthImage);
-        float depthScale = (float) 0.00025;
+        float depthScale = (float) 0.1;
         depthMap.resize(depthImage.getHeight(), depthImage.getWidth());
         for (unsigned int i = 0; i < depthImage.getHeight(); i++)
         {
@@ -256,31 +249,49 @@ namespace agimus_vision
           }
         }
         std::vector<int> tags_id = detector_->detector.getTagsId();
-        std::vector<std::vector<vpPoint>> tags_points3d = detector_->detector.getTagsPoints3D(tags_id, tags_size);
+        std::vector<std::vector<vpPoint>> tags_points3d = detector_->detector.getTagsPoints3D(tags_id  , tags_size);
         std::vector<std::vector<vpImagePoint>> tags_corners = detector_->detector.getPolygon();
-      
 
+
+        //vectors to hold 3d points and 2d points to calculate the pose
+        std::vector<vpPoint> points3d;
+        std::vector<vpImagePoint> points2d;
 
         for (int j=0; j < detectedTags_.size(); j++){
+
+          //tags_corners and tags_points3d should have same size
           for (int i = 0; i < tags_corners.size(); i++)
           {
-            double confidence_index;
-            
+            //check only the tags which belong to the object's tracker 
             if (detectedTags_[j].tag->id == tags_id[i])
             {
+              //addd 3d points to vectors
               for( unsigned int k = 0; k < tags_points3d[i].size(); k++ ) 
-                tags_points3d[i][k].oP = detectedTags_[j].tag->oMt * tags_points3d[i][k].oP;
-              
-              if (vpPose::computePlanarObjectPoseFromRGBD(depthMap, tags_corners[i], cam_, tags_points3d[i], cMo_, &confidence_index))
               {
-                ROS_WARN_STREAM("tag:" + std::to_string(tags_id[i]) + ". Confidence: " + std::to_string(confidence_index));
-                // return state_tracking;
+                tags_points3d[i][k].oP = detectedTags_[j].tag->oMt * tags_points3d[i][k].oP;
+                points3d.push_back(tags_points3d[i][k]);
               }
+
+              // add 2d points to vectors
+              for( unsigned int k = 0; k < tags_corners[i].size(); k++ ) 
+                points2d.push_back(tags_corners[i][k]);
             }
           }
         }
-
-        return state_tracking;
+     
+ 
+       if (points3d.size() > 0 && points2d.size() > 0)
+       {  
+          ROS_WARN_STREAM("points3d size:" + std::to_string(points3d.size()));
+          ROS_WARN_STREAM("points2d size:" + std::to_string(points2d.size()));
+          double confidence_index;
+          if (vpPose::computePlanarObjectPoseFromRGBD(depthMap, points2d, cam_, points3d, cMo_, &confidence_index))
+          {
+            ROS_WARN_STREAM(cMo_);
+            
+          }
+       }
+       return state_tracking;
       }
 
       bool AprilTag::detectTags(const GrayImage_t &I)

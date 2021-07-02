@@ -73,7 +73,7 @@ namespace agimus_vision
             std::vector<std::vector<vpImagePoint>> tags_corners = _detector->detector.getPolygon();
             std::map<int, double> tags_size;
             tags_size[-1] = _tag_size_meters;
-            float depthScale = (float) 0.00025;
+            float depthScale = (float) 0.1;
 
             depthMap.resize(depthImage.getHeight(), depthImage.getWidth());
             for (unsigned int i = 0; i < depthImage.getHeight(); i++)
@@ -92,24 +92,17 @@ namespace agimus_vision
                 }
             }
 
-            // tags_size.insert( std::pair<int,double>(100,0.0415)); 
-            // tags_size.insert( std::pair<int,double>(101,0.0415));
-        //    tags_size[100] = 0.0415;
-        //    tags_size[101] = 0.0415;
-        //    tags_size[230] = 0.04;
-        //    tags_size[23] = 0.04;
 
-    //        for (const auto& [key, value] : tags_size) {
-    //     ROS_WARN_STREAM(std::to_string(key) + " = " + std::to_string(value));
-    //   }
-    tags_size[-1]  = 0.0845;
+        tags_size[-1]  = _tag_size_meters;
         tags_size[6]   = 0.0845;
         tags_size[15]  = 0.0845;
+        tags_size[13]  = 0.0845;
         tags_size[1]   = 0.0845;
-        tags_size[100]  = 0.0415;
-        tags_size[101]  = 0.0415;
+        tags_size[100] = 0.04;
+        tags_size[101] = 0.04;
         tags_size[230] = 0.04;
         tags_size[23]  = 0.04;
+
             std::vector<std::vector<vpPoint>> tags_points3d = _detector->detector.getTagsPoints3D(tags_id, tags_size);
             for (int i = 0; i < tags_corners.size(); i++)
             {
@@ -132,7 +125,7 @@ namespace agimus_vision
                         _state = already_acquired_object;
                     if (vpPose::computePlanarObjectPoseFromRGBD(depthMap, tags_corners[i], _cam_parameters, tags_points3d[i], _cMo, &confidence_index))
                     {
-                        // _error = pose.computeResidual(_cMo);
+                        _error = pose.computeResidual(_cMo);
                         //  ROS_WARN_STREAM("Detect _cMo:");
                         //  ROS_WARN_STREAM(_cMo);
                         return true;

@@ -168,13 +168,12 @@ namespace agimus_vision
       }
 
       _gray_image = visp_bridge::toVispImage(*image);
-      ROS_WARN_STREAM("Got Color Image");
+  
       try
       {
         if ("16UC1" == depth_image->encoding)
         {
           _depth_image = toVispImageFromDepth(*depth_image);
-          ROS_WARN_STREAM("Got Depth Image");
           
         }
       }
@@ -186,6 +185,7 @@ namespace agimus_vision
       imageProcessing();
     }
 
+    
     // void Node::depthFrameCallback(const sensor_msgs::ImageConstPtr &image)
     // {
     //   std::unique_lock<std::mutex> lock(_image_lock, std::try_to_lock);
