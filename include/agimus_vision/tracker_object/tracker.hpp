@@ -6,6 +6,7 @@
 #include <visp3/core/vpImage.h>
 #include <visp3/core/vpCameraParameters.h>
 #include <visp3/mbt/vpMbGenericTracker.h>
+#include <visp3/sensor/vpRealSense2.h>
 
 #include <agimus_vision/tracker_object/detector_apriltag.hpp>
 #include <agimus_vision/TrackerConfig.h>

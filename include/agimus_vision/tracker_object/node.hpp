@@ -60,6 +60,10 @@ class Node
     std::string _image_topic;
     std::string _depth_image_topic;
     std::string _camera_info_topic;
+
+
+    // Some params related to depth image info
+    float _depth_scale_param; // to use on Visp's compute Pose using RGBD info
     
     // ros::Subscriber _image_sub;
     // ros::Subscriber _depth_image_sub;

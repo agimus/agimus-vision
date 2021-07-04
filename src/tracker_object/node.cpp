@@ -72,6 +72,7 @@ namespace agimus_vision
       _node_handle.param<std::string>("depthImageTopic", _depth_image_topic, "/camera/depth/image_rect");
       _node_handle.param<std::string>("cameraInfoTopic", _camera_info_topic, "/camera/rgb/camera_info");
 
+
       // Initialize camera parameters
       ROS_INFO_STREAM("Wait for camera info message on " << _camera_info_topic);
       sensor_msgs::CameraInfoConstPtr cam_info_msg =
@@ -106,6 +107,10 @@ namespace agimus_vision
       _node_handle.param<bool>("broadcastTf", _broadcast_tf, false);
       _node_handle.param<std::string>("broadcastTfPostfix", _broadcast_tf_postfix, "");
       _node_handle.param<bool>("broadcastTopic", _broadcast_topic, false);
+
+
+      //some others parameters
+      _node_handle.param<float>("depth_scale", _depth_scale_param, (float)0.1); //0.1 for tiago's orbbec
 
       // TODO: Switch for detector types and tracker init
       std::string object_type{};
@@ -174,7 +179,7 @@ namespace agimus_vision
         if ("16UC1" == depth_image->encoding)
         {
           _depth_image = toVispImageFromDepth(*depth_image);
-          
+          // ROS_WARN_STREAM(_depth_image);
         }
       }
       catch (const std::exception &e)
@@ -223,6 +228,7 @@ namespace agimus_vision
 
         memcpy(dst.bitmap, &(src.data[0]), dst.getHeight() * src.step * sizeof(unsigned char));
       }
+      // ROS_WARN_STREAM(dst);
       return dst;
     }
 

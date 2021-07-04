@@ -42,7 +42,7 @@ class DetectorAprilTag : public Detector
     DetectorAprilTagWrapperPtr _detector;
     const int _tag_id;
     const double _tag_size_meters;
-
+    float _depth_scale;
     std::vector< vpPoint > compute3DPoints() const;
 
 public:
@@ -64,6 +64,11 @@ public:
     size_t id() const
     {
       return _tag_id;
+    }
+    
+    float depth_scale()
+    {
+      return _depth_scale;
     }
 
     static std::array< vpPoint, 4 > compute3DPoints(const double size);

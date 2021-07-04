@@ -6,6 +6,7 @@
 #include <visp3/mbt/vpMbGenericTracker.h>
 #include <visp3/vision/vpPose.h>
 #include <string>
+#include <vector>
 
 namespace agimus_vision
 {
@@ -214,7 +215,7 @@ namespace agimus_vision
 
         // Pose estimation
         std::map<int, double> tags_size;
-
+        // _vpRealSense2_h_ g;
         //default tag size
         tags_size[-1]  = 0.0845;
         tags_size[6]   = 0.0845;
@@ -223,23 +224,23 @@ namespace agimus_vision
         tags_size[1]   = 0.0845;
         tags_size[100]  = 0.04;
         tags_size[101]  = 0.04;
-        tags_size[230] = 0.04;
+        tags_size[230] = 0.05;
         tags_size[23]  = 0.04;
         
-
-        vpPose pose;
         vpImage<float> depthMap;
         vpImage<unsigned char> depthImage;
-        vpImageConvert::convert(D, depthImage);
-        float depthScale = (float) 0.1;
-        depthMap.resize(depthImage.getHeight(), depthImage.getWidth());
-        for (unsigned int i = 0; i < depthImage.getHeight(); i++)
+        // vpImageConvert::convert(D, depthImage);
+        // ROS_WARN_STREAM(depthImage);
+        float depthScale = (float) 0.001;
+        depthMap.resize(D.getHeight(), D.getWidth());
+        for (unsigned int i = 0; i < D.getHeight(); i++)
         {
-          for (unsigned int j = 0; j < depthImage.getWidth(); j++)
+          for (unsigned int j = 0; j < D.getWidth(); j++)
           {
-            if (depthImage[i][j])
+            if (D[i][j])
             {
-              float Z = depthImage[i][j] * depthScale;
+              float Z = D[i][j] * depthScale;
+              // ROS_WARN_STREAM(std::to_string(Z) + " ");
               depthMap[i][j] = Z;
             }
             else
@@ -247,13 +248,16 @@ namespace agimus_vision
               depthMap[i][j] = 0;
             }
           }
+           
         }
+       
         std::vector<int> tags_id = detector_->detector.getTagsId();
         std::vector<std::vector<vpPoint>> tags_points3d = detector_->detector.getTagsPoints3D(tags_id  , tags_size);
         std::vector<std::vector<vpImagePoint>> tags_corners = detector_->detector.getPolygon();
 
 
         //vectors to hold 3d points and 2d points to calculate the pose
+        vpPose pose;
         std::vector<vpPoint> points3d;
         std::vector<vpImagePoint> points2d;
 
@@ -279,15 +283,30 @@ namespace agimus_vision
           }
         }
      
- 
+
        if (points3d.size() > 0 && points2d.size() > 0)
        {  
-          ROS_WARN_STREAM("points3d size:" + std::to_string(points3d.size()));
-          ROS_WARN_STREAM("points2d size:" + std::to_string(points2d.size()));
+          double _pose_thr = 4.0;
+          vpHomogeneousMatrix new_cMo_;
           double confidence_index;
-          if (vpPose::computePlanarObjectPoseFromRGBD(depthMap, points2d, cam_, points3d, cMo_, &confidence_index))
+
+          if (vpPose::computePlanarObjectPoseFromRGBD(depthMap, points2d, cam_, points3d, new_cMo_, &confidence_index))
           {
-            ROS_WARN_STREAM(cMo_);
+            vpMatrix mcMo(cMo_);
+            vpMatrix mcMo_new(new_cMo_);
+            double fNormOld = mcMo.frobeniusNorm();
+            double fNormNew = mcMo_new.frobeniusNorm();
+            double error   = abs(fNormNew - fNormOld);
+            if ( _pose_thr < error)
+            {
+              //reject new pose due to great difference to the old
+              ROS_WARN_STREAM("great  error   :" + std::to_string(error));
+            }
+            else
+            {
+              // accpet new pose
+              cMo_ = new_cMo_;
+            }
             
           }
        }

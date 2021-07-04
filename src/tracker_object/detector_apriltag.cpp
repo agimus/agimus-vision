@@ -68,21 +68,21 @@ namespace agimus_vision
             vpPose pose;
             vpImage<float> depthMap;
             vpImage<unsigned char> depthImage;
-            vpImageConvert::convert(D, depthImage);
+            // vpImageConvert::convert(D, depthImage);
             std::vector<int> tags_id = _detector->detector.getTagsId();
             std::vector<std::vector<vpImagePoint>> tags_corners = _detector->detector.getPolygon();
             std::map<int, double> tags_size;
             tags_size[-1] = _tag_size_meters;
-            float depthScale = (float) 0.1;
+            float depthScale = (float) 0.001;
 
-            depthMap.resize(depthImage.getHeight(), depthImage.getWidth());
-            for (unsigned int i = 0; i < depthImage.getHeight(); i++)
+              depthMap.resize(D.getHeight(), D.getWidth());
+            for (unsigned int i = 0; i < D.getHeight(); i++)
             {
-                for (unsigned int j = 0; j < depthImage.getWidth(); j++)
+                for (unsigned int j = 0; j < D.getWidth(); j++)
                 {
-                    if (depthImage[i][j])
+                    if (D[i][j])
                     {
-                        float Z = depthImage[i][j] * depthScale;
+                        float Z = D[i][j] * depthScale;
                         depthMap[i][j] = Z;
                     }
                     else
@@ -92,7 +92,7 @@ namespace agimus_vision
                 }
             }
 
-
+        
         tags_size[-1]  = _tag_size_meters;
         tags_size[6]   = 0.0845;
         tags_size[15]  = 0.0845;
@@ -100,9 +100,9 @@ namespace agimus_vision
         tags_size[1]   = 0.0845;
         tags_size[100] = 0.04;
         tags_size[101] = 0.04;
-        tags_size[230] = 0.04;
+        tags_size[230] = 0.05;
         tags_size[23]  = 0.04;
-
+        
             std::vector<std::vector<vpPoint>> tags_points3d = _detector->detector.getTagsPoints3D(tags_id, tags_size);
             for (int i = 0; i < tags_corners.size(); i++)
             {
@@ -125,9 +125,6 @@ namespace agimus_vision
                         _state = already_acquired_object;
                     if (vpPose::computePlanarObjectPoseFromRGBD(depthMap, tags_corners[i], _cam_parameters, tags_points3d[i], _cMo, &confidence_index))
                     {
-                        _error = pose.computeResidual(_cMo);
-                        //  ROS_WARN_STREAM("Detect _cMo:");
-                        //  ROS_WARN_STREAM(_cMo);
                         return true;
                     }
                 }
