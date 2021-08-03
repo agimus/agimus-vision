@@ -29,7 +29,7 @@ bool Detector::detect()
 }
 
 
-bool Detector::detectOnDepthImage(const DepthMap_t& I)
+bool Detector::detectOnDepthImage(const DepthMap_t& I, float depthScale)
 {
     return false;
 }
@@ -46,7 +46,7 @@ void Detector::drawDebug( GrayImage_t&/*I*/ ) const
 
 bool Detector::computePose()
 {
-     ROS_WARN_STREAM("computePose");
+    //  ROS_WARN_STREAM("computePose");
     if( _state == no_object )
         return false;
 
@@ -116,6 +116,7 @@ bool Detector::computePose()
  
     assert(_state == already_acquired_object);
     pose.computePose( vpPose::VIRTUAL_VS, _cMo );
+    // ROS_WARN_STREAM(_cMo);
     _error = pose.computeResidual( _cMo );
     return true;
 }

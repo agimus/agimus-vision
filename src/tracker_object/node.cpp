@@ -97,7 +97,7 @@ namespace agimus_vision
       _deph_image_sub.subscribe(_node_handle, _depth_image_topic, 1);
       // ROS_INFO("Subcribed to the topic: %s", strDepthImage_sub_topic.c_str());
 
-      sync_.reset(new Sync(MySyncPolicy(10), _image_sub, _deph_image_sub));
+      sync_.reset(new Sync(MySyncPolicy(100), _image_sub, _deph_image_sub));
       sync_->registerCallback(boost::bind(&Node::frameCallback, this, _1, _2));
       
       // TF node of the camera seeing the tags
@@ -110,7 +110,7 @@ namespace agimus_vision
 
 
       //some others parameters
-      _node_handle.param<float>("depth_scale", _depth_scale_param, (float)0.1); //0.1 for tiago's orbbec
+      _node_handle.param<float>("depthScale", _depth_scale_param, (float)0.1); //0.1 for tiago's orbbec
 
       // TODO: Switch for detector types and tracker init
       std::string object_type{};
@@ -264,7 +264,7 @@ namespace agimus_vision
       for (Tracker &tracker : _trackers)
       {
         // tracker.process(_gray_image, _depth_image, timestamp.toSec());
-        tracker.process(_gray_image, _depth_image, timestamp.toSec());
+        tracker.process(_gray_image, _depth_image, timestamp.toSec(), _depth_scale_param);
         if (tracker.hasPose())
         {
           // c: camera
@@ -300,7 +300,7 @@ namespace agimus_vision
         const std::string &object_name = detector.second.object_name;
 
       // if (detector_ptr->analyseImage(_gray_image) && detector_ptr->detect())
-        if (detector_ptr->analyseImage(_gray_image) && detector_ptr->detectOnDepthImage(_depth_image))
+        if (detector_ptr->analyseImage(_gray_image) && detector_ptr->detectOnDepthImage(_depth_image, _depth_scale_param))
         {
           // c: camera
           // o: object

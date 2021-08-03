@@ -45,7 +45,7 @@ public:
 
   /// Track the object.
   /// \param I a new image.
-  virtual State track(const GrayImage_t& I, const DepthMap_t& D) = 0;
+  virtual State track(const GrayImage_t& I, const DepthMap_t& D, float depthScale) = 0;
 
   /// Get the object pose
   virtual void getPose (vpHomogeneousMatrix& cMo) const = 0;
@@ -96,7 +96,7 @@ class Tracker : public Reconfigurable
     /// initialization step to detect it.
     /// If the object was detected in the previous image, use the
     /// tracking step.
-    void process (const GrayImage_t& I, const vpImage<uint16_t>& D, const double time);
+    void process (const GrayImage_t& I, const vpImage<uint16_t>& D, const double time, float depthScale);
 
     /// Whether an object pose could be computed.
     bool hasPose () const
@@ -180,7 +180,7 @@ class AprilTag : public InitializationStep, public TrackingStep
     ///         the pose. Take example of what is done in DetectorAprilTag.
     ///       - Easy: Use a ModelBased tracker that contains only the edges of
     ///         tag. This should be done outside of this class.
-    State track(const GrayImage_t &I, const DepthMap_t &D);
+    State track(const GrayImage_t &I, const DepthMap_t &D, float depthScale);
 
     void getPose (vpHomogeneousMatrix& cMo) const
     {
@@ -223,6 +223,7 @@ class AprilTag : public InitializationStep, public TrackingStep
       Tag* tag;
     };
     std::vector<DetectedTag> detectedTags_;
+    std::map<int, double> tags_size;
     vpHomogeneousMatrix cMo_;
 };
 

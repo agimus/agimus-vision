@@ -56,7 +56,7 @@ public:
     virtual bool analyseImage( const vpImage< unsigned char > &gray_image );
 
     virtual bool detect();
-    virtual bool detectOnDepthImage(const DepthMap_t& I);
+    virtual bool detectOnDepthImage(const DepthMap_t& I, float depthScale);
 
     virtual void drawDebug( GrayImage_t& I ) const;
 

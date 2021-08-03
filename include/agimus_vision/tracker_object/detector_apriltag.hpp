@@ -44,7 +44,7 @@ class DetectorAprilTag : public Detector
     const double _tag_size_meters;
     float _depth_scale;
     std::vector< vpPoint > compute3DPoints() const;
-
+    std::map<int, double> tags_size;
 public:
     DetectorAprilTag( DetectorAprilTagWrapperPtr detector,
         const vpCameraParameters &cam_parameters,
@@ -53,7 +53,7 @@ public:
 
     bool analyseImage( const GrayImage_t& I );
 
-    bool detectOnDepthImage(const DepthMap_t& I);
+    bool detectOnDepthImage(const DepthMap_t& I, float depthScale);
 
     bool detect();
 

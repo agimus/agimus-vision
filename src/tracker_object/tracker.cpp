@@ -13,7 +13,7 @@ namespace agimus_vision
   namespace tracker_object
   {
 
-    void Tracker::process(const GrayImage_t &I, const DepthMap_t &D, const double time)
+    void Tracker::process(const GrayImage_t &I, const DepthMap_t &D, const double time, float depthScale)
     {
       vpHomogeneousMatrix cMo;
       if (n_ > 0)
@@ -37,7 +37,7 @@ namespace agimus_vision
 
       if (state_ == state_tracking)
       {
-        state_ = tracking_->track(I, D);
+        state_ = tracking_->track(I, D, depthScale);
         if (filtering_)
         {
           vpHomogeneousMatrix cMo;
@@ -189,6 +189,9 @@ namespace agimus_vision
           if (detector_->detector.getPose(detectedTag.i, detectedTag.tag->size, cam_, cMt))
           {
             cMo_ = cMt * detectedTag.tag->oMt.inverse();
+            //add tag size to the map for depth 
+            tags_size[detectedTag.i] = detectedTag.tag->size;
+
             return state_tracking;
           }
         }
@@ -207,31 +210,13 @@ namespace agimus_vision
      
 
 
-      State AprilTag::track(const GrayImage_t &I, const vpImage<uint16_t> &D)
+      State AprilTag::track(const GrayImage_t &I, const vpImage<uint16_t> &D, float depthScale)
       {
-
+       
         if (!detectTags(I))
           return state_detection;
-
-        // Pose estimation
-        std::map<int, double> tags_size;
-        // _vpRealSense2_h_ g;
-        //default tag size
-        tags_size[-1]  = 0.0845;
-        tags_size[6]   = 0.0845;
-        tags_size[15]  = 0.0845;
-        tags_size[13]  = 0.0845;
-        tags_size[1]   = 0.0845;
-        tags_size[100]  = 0.04;
-        tags_size[101]  = 0.04;
-        tags_size[230] = 0.05;
-        tags_size[23]  = 0.04;
-        
+       
         vpImage<float> depthMap;
-        vpImage<unsigned char> depthImage;
-        // vpImageConvert::convert(D, depthImage);
-        // ROS_WARN_STREAM(depthImage);
-        float depthScale = (float) 0.001;
         depthMap.resize(D.getHeight(), D.getWidth());
         for (unsigned int i = 0; i < D.getHeight(); i++)
         {
@@ -240,7 +225,6 @@ namespace agimus_vision
             if (D[i][j])
             {
               float Z = D[i][j] * depthScale;
-              // ROS_WARN_STREAM(std::to_string(Z) + " ");
               depthMap[i][j] = Z;
             }
             else
@@ -250,64 +234,43 @@ namespace agimus_vision
           }
            
         }
-       
-        std::vector<int> tags_id = detector_->detector.getTagsId();
-        std::vector<std::vector<vpPoint>> tags_points3d = detector_->detector.getTagsPoints3D(tags_id  , tags_size);
-        std::vector<std::vector<vpImagePoint>> tags_corners = detector_->detector.getPolygon();
 
+        
 
-        //vectors to hold 3d points and 2d points to calculate the pose
-        vpPose pose;
+        // vpPose pose;
         std::vector<vpPoint> points3d;
         std::vector<vpImagePoint> points2d;
+        
+         for (const DetectedTag& dtag : detectedTags_) {
+          std::vector<vpImagePoint> imagePoints = detector_->detector.getPolygon (dtag.i);
+          // points2d.push_back(imagePoints);
+          points2d.insert(std::end(points2d), std::begin(imagePoints), std::end(imagePoints));
+          std::array< vpPoint, 4 > tPs = DetectorAprilTag::compute3DPoints(dtag.tag->size);
 
-        for (int j=0; j < detectedTags_.size(); j++){
+          // Compute the 2D coord. of the points (in meters) to match the 3D coord. for the pose estimation
+          for( unsigned int i = 0; i < tPs.size(); i++ ) {
+            double x{0.}, y{0.};
+            vpPixelMeterConversion::convertPointWithoutDistortion (cam_, imagePoints[i], x, y);
 
-          //tags_corners and tags_points3d should have same size
-          for (int i = 0; i < tags_corners.size(); i++)
-          {
-            //check only the tags which belong to the object's tracker 
-            if (detectedTags_[j].tag->id == tags_id[i])
-            {
-              //addd 3d points to vectors
-              for( unsigned int k = 0; k < tags_points3d[i].size(); k++ ) 
-              {
-                tags_points3d[i][k].oP = detectedTags_[j].tag->oMt * tags_points3d[i][k].oP;
-                points3d.push_back(tags_points3d[i][k]);
-              }
+            // x, y are the coordinates in the image plane, oX, oY, oZ in the world,
+            // and X, Y, Z in the camera ref. frame
+            tPs[i].set_x (x);
+            tPs[i].set_y (y);
 
-              // add 2d points to vectors
-              for( unsigned int k = 0; k < tags_corners[i].size(); k++ ) 
-                points2d.push_back(tags_corners[i][k]);
-            }
-          }
-        }
-     
-
+            tPs[i].oP = dtag.tag->oMt * tPs[i].oP;
+            points3d.push_back(tPs[i]);
+           }
+         }
+       
        if (points3d.size() > 0 && points2d.size() > 0)
        {  
-          double _pose_thr = 4.0;
+          double _pose_thr = 10.0;
           vpHomogeneousMatrix new_cMo_;
           double confidence_index;
 
-          if (vpPose::computePlanarObjectPoseFromRGBD(depthMap, points2d, cam_, points3d, new_cMo_, &confidence_index))
+          if (vpPose::computePlanarObjectPoseFromRGBD(depthMap, points2d, cam_, points3d, cMo_, &confidence_index))
           {
-            vpMatrix mcMo(cMo_);
-            vpMatrix mcMo_new(new_cMo_);
-            double fNormOld = mcMo.frobeniusNorm();
-            double fNormNew = mcMo_new.frobeniusNorm();
-            double error   = abs(fNormNew - fNormOld);
-            if ( _pose_thr < error)
-            {
-              //reject new pose due to great difference to the old
-              ROS_WARN_STREAM("great  error   :" + std::to_string(error));
-            }
-            else
-            {
-              // accpet new pose
-              cMo_ = new_cMo_;
-            }
-            
+              ROS_WARN_STREAM("Computed Successfully");
           }
        }
        return state_tracking;

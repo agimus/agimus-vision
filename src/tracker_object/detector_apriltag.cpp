@@ -18,6 +18,8 @@ namespace agimus_vision
                                            const double tag_size_meters)
             : Detector(cam_parameters), _detector{detector}, _tag_id{tag_id}, _tag_size_meters{tag_size_meters}
         {
+            //default size value of all tag, to prevent exeception error when scanning all.
+            tags_size[-1] =  _tag_size_meters;
         }
 
         bool DetectorAprilTag::analyseImage(const vpImage<unsigned char> &gray_image)
@@ -28,7 +30,7 @@ namespace agimus_vision
         bool DetectorAprilTag::detect() 
         {
             //  std::cout << "detect" << std::endl;
-            // ROS_WARN_STREAM("detect");
+            ROS_WARN_STREAM("detactor_apriltag_ detect");
             _image_points.clear();
             for (size_t i{0}; i < _detector->detector.getNbObjects(); ++i)
             {
@@ -36,10 +38,12 @@ namespace agimus_vision
                 std::string msg = _detector->detector.getMessage(i);
                 size_t stag = tag.size();
                 size_t smsg = msg.size();
+                
                 // Checks whether msg ends with tag
                 if (stag <= smsg && msg.compare(smsg - stag, stag, tag) == 0)
                 {
                     _image_points = _detector->detector.getPolygon(i);
+                   
 
                     if (_state == no_object)
                         _state = newly_acquired_object;
@@ -59,23 +63,17 @@ namespace agimus_vision
             return false;
         }
 
-        bool DetectorAprilTag::detectOnDepthImage(const DepthMap_t &D)
+        bool DetectorAprilTag::detectOnDepthImage(const DepthMap_t &D, float depthScale)
         {
-
-            // ROS_WARN_STREAM("detectOnDepthImage");
-            
             _image_points.clear();
             vpPose pose;
             vpImage<float> depthMap;
             vpImage<unsigned char> depthImage;
-            // vpImageConvert::convert(D, depthImage);
             std::vector<int> tags_id = _detector->detector.getTagsId();
             std::vector<std::vector<vpImagePoint>> tags_corners = _detector->detector.getPolygon();
-            std::map<int, double> tags_size;
-            tags_size[-1] = _tag_size_meters;
-            float depthScale = (float) 0.001;
-
-              depthMap.resize(D.getHeight(), D.getWidth());
+            //set tag size to use in the fusion with depth
+            tags_size[_tag_id] =  _tag_size_meters;
+            depthMap.resize(D.getHeight(), D.getWidth());
             for (unsigned int i = 0; i < D.getHeight(); i++)
             {
                 for (unsigned int j = 0; j < D.getWidth(); j++)
@@ -92,16 +90,6 @@ namespace agimus_vision
                 }
             }
 
-        
-        tags_size[-1]  = _tag_size_meters;
-        tags_size[6]   = 0.0845;
-        tags_size[15]  = 0.0845;
-        tags_size[13]  = 0.0845;
-        tags_size[1]   = 0.0845;
-        tags_size[100] = 0.04;
-        tags_size[101] = 0.04;
-        tags_size[230] = 0.05;
-        tags_size[23]  = 0.04;
         
             std::vector<std::vector<vpPoint>> tags_points3d = _detector->detector.getTagsPoints3D(tags_id, tags_size);
             for (int i = 0; i < tags_corners.size(); i++)
