@@ -110,7 +110,7 @@ namespace agimus_vision
 
 
       //some others parameters
-      _node_handle.param<float>("depthScale", _depth_scale_param, (float)0.1); //0.1 for tiago's orbbec
+      _node_handle.param<float>("depthScale", _depth_scale_param, (float)0.01); //0.1 for tiago's orbbec
 
       // TODO: Switch for detector types and tracker init
       std::string object_type{};

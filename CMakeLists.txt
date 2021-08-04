@@ -4,6 +4,7 @@ SET(PROJECT_NAME agimus_vision)
 SET(PROJECT_DESCRIPTION "Computer vision for Agimus")
 SET(PROJECT_URL https://github.com/agimus/agimus-vision)
 SET(PROJECT_VERSION 0.1.0)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 SET(CXX_DISABLE_WERROR TRUE)
 
@@ -69,7 +70,7 @@ catkin_package()
 if(COMPILE_AND_INSTALL_BINARIES)
   add_subdirectory(src/tracker_object)
   ##add_subdirectory(src/extrinsic_calibration)
-  # add_subdirectory(tests)
+  #add_subdirectory(tests)
 
   SET(${PROJECT_NAME}_HEADERS
     include/agimus_vision/extrinsic_calibration/extrinsic_calibration.hpp
@@ -83,6 +84,26 @@ if(COMPILE_AND_INSTALL_BINARIES)
 
   catkin_install_python(PROGRAMS scripts/simulate.py scripts/calibrate_real_joint.py scripts/publish_real_joint.py
     DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+
+  find_package(pybind11 CONFIG)
+  if(pybind11_FOUND)
+    pybind11_add_module(py_agimus_vision src/python.cpp)
+    target_link_libraries(py_agimus_vision PRIVATE ${PROJECT_NAME}_tracker_object_lib)
+
+    if(NOT DEFINED PYTHON_SITELIB)
+      execute_process(
+        COMMAND "${PYTHON_EXECUTABLE}" "-c"
+        #"import sys, os; print(os.sep.join(['lib', 'python' + sys.version[:3], 'dist-packages']))"
+        "from distutils import sysconfig; print(sysconfig.get_python_lib(prefix='', plat_specific=False))"
+        OUTPUT_VARIABLE PYTHON_SITELIB
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET)
+    endif()
+
+    message(STATUS "Installing python module to ${PYTHON_SITELIB}")
+    install(TARGETS py_agimus_vision
+      DESTINATION ${PYTHON_SITELIB}/agimus_vision)
+  endif()
 endif(COMPILE_AND_INSTALL_BINARIES)
 
 install(DIRECTORY objects launch config data

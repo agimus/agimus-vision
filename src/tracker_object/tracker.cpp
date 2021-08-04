@@ -189,9 +189,6 @@ namespace agimus_vision
           if (detector_->detector.getPose(detectedTag.i, detectedTag.tag->size, cam_, cMt))
           {
             cMo_ = cMt * detectedTag.tag->oMt.inverse();
-            //add tag size to the map for depth 
-            tags_size[detectedTag.i] = detectedTag.tag->size;
-
             return state_tracking;
           }
         }
@@ -207,24 +204,28 @@ namespace agimus_vision
         cMo_ = cMo;
       }
 
-     
-
-
       State AprilTag::track(const GrayImage_t &I, const vpImage<uint16_t> &D, float depthScale)
       {
-       
+
         if (!detectTags(I))
           return state_detection;
-       
+
+        tags_size[-1] = 0.0845;
         vpImage<float> depthMap;
-        depthMap.resize(D.getHeight(), D.getWidth());
-        for (unsigned int i = 0; i < D.getHeight(); i++)
+        vpImage<unsigned char> depthImage;
+        vpImageConvert::convert(D, depthImage);
+        std::vector<int> tags_id;
+        std::vector<vpPoint> points3d;
+        std::vector<vpImagePoint> points2d;
+
+        depthMap.resize(depthImage.getHeight(), depthImage.getWidth());
+        for (unsigned int i = 0; i < depthImage.getHeight(); i++)
         {
-          for (unsigned int j = 0; j < D.getWidth(); j++)
+          for (unsigned int j = 0; j < depthImage.getWidth(); j++)
           {
-            if (D[i][j])
+            if (depthImage[i][j])
             {
-              float Z = D[i][j] * depthScale;
+              float Z = depthImage[i][j] * depthScale;
               depthMap[i][j] = Z;
             }
             else
@@ -232,48 +233,74 @@ namespace agimus_vision
               depthMap[i][j] = 0;
             }
           }
-           
+        }
+        
+        for (const DetectedTag &dtag : detectedTags_)
+          tags_id.push_back(dtag.tag->id);
+
+        
+        std::vector<std::vector<vpPoint>> tags_points3d = detector_->detector.getTagsPoints3D(tags_id, tags_size);
+        
+
+        for (int i = 0; i < tags_id.size(); i++)
+        {
+          for (const DetectedTag &dtag : detectedTags_)
+          {
+
+            if (dtag.tag->id == tags_id[i])
+            {
+              //addd 3d points to vectors
+              for (unsigned int j = 0; j < tags_points3d[i].size(); j++)
+              {
+                tags_points3d[i][j].oP = dtag.tag->oMt * tags_points3d[i][j].oP;
+                points3d.push_back(tags_points3d[i][j]);
+              }
+
+              //addd 2d points to vectors
+
+              std::vector<vpImagePoint> imagePoints = detector_->detector.getPolygon(dtag.i);
+              for (int j = 0; j < imagePoints.size(); j++)
+                points2d.push_back(imagePoints[j]);
+            }
+          }
         }
 
-        
-
-        // vpPose pose;
-        std::vector<vpPoint> points3d;
-        std::vector<vpImagePoint> points2d;
-        
-         for (const DetectedTag& dtag : detectedTags_) {
-          std::vector<vpImagePoint> imagePoints = detector_->detector.getPolygon (dtag.i);
-          // points2d.push_back(imagePoints);
-          points2d.insert(std::end(points2d), std::begin(imagePoints), std::end(imagePoints));
-          std::array< vpPoint, 4 > tPs = DetectorAprilTag::compute3DPoints(dtag.tag->size);
-
-          // Compute the 2D coord. of the points (in meters) to match the 3D coord. for the pose estimation
-          for( unsigned int i = 0; i < tPs.size(); i++ ) {
-            double x{0.}, y{0.};
-            vpPixelMeterConversion::convertPointWithoutDistortion (cam_, imagePoints[i], x, y);
-
-            // x, y are the coordinates in the image plane, oX, oY, oZ in the world,
-            // and X, Y, Z in the camera ref. frame
-            tPs[i].set_x (x);
-            tPs[i].set_y (y);
-
-            tPs[i].oP = dtag.tag->oMt * tPs[i].oP;
-            points3d.push_back(tPs[i]);
-           }
-         }
-       
-       if (points3d.size() > 0 && points2d.size() > 0)
-       {  
-          double _pose_thr = 10.0;
-          vpHomogeneousMatrix new_cMo_;
+        if ((points3d.size() > 0) && (points2d.size() == points3d.size()))
+        {
           double confidence_index;
-
-          if (vpPose::computePlanarObjectPoseFromRGBD(depthMap, points2d, cam_, points3d, cMo_, &confidence_index))
+          vpHomogeneousMatrix new_cMo_;
+          if (vpPose::computePlanarObjectPoseFromRGBD(depthMap, points2d, cam_, points3d, new_cMo_, &confidence_index))
           {
-              ROS_WARN_STREAM("Computed Successfully");
+              
+              vpMatrix newMat = (vpMatrix)new_cMo_;
+              vpMatrix oldMat = (vpMatrix)cMo_;
+              vpTranslationVector old_trans;
+              vpTranslationVector new_trans;
+              vpTranslationVector trans;
+
+              new_cMo_.extract(new_trans);
+              cMo_.extract(old_trans);
+              trans = old_trans - new_trans;
+
+              double trans_dist = sqrt(trans.sumSquare());
+              double norm_new = newMat.frobeniusNorm();
+              double norm_old = oldMat.frobeniusNorm();
+              double distance = abs(norm_new - norm_old);
+        
+              
+              if (distance < 1.0 && trans_dist < 1.0)
+                cMo_ = new_cMo_;
+              else
+              {
+                ROS_WARN_STREAM("Frob distance:" + std::to_string(distance));
+                ROS_WARN_STREAM("trans distance:" + std::to_string(trans_dist));
+              }
+
+              
           }
-       }
-       return state_tracking;
+        }
+
+        return state_tracking;
       }
 
       bool AprilTag::detectTags(const GrayImage_t &I)
@@ -296,7 +323,7 @@ namespace agimus_vision
           return;
 
         std::array<vpColor, 4> colors{{vpColor::red, vpColor::green, vpColor::blue, vpColor::cyan}};
-         //Fix Bug: while tracking, if tag is out of view, agimus_vision stopped => add try catch 
+        //Fix Bug: while tracking, if tag is out of view, agimus_vision stopped => add try catch
         try
         {
           for (const DetectedTag &dtag : detectedTags_)
@@ -325,6 +352,7 @@ namespace agimus_vision
         tag.oMt = oMt;
         tag.size = size;
         tags_.push_back(tag);
+        tags_size[id] = size;
         return true;
       }
 

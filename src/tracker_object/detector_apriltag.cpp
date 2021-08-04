@@ -27,7 +27,7 @@ namespace agimus_vision
             return _detector->detect(gray_image);
         }
 
-        bool DetectorAprilTag::detect() 
+        bool DetectorAprilTag::detect()
         {
             //  std::cout << "detect" << std::endl;
             ROS_WARN_STREAM("detactor_apriltag_ detect");
@@ -38,12 +38,11 @@ namespace agimus_vision
                 std::string msg = _detector->detector.getMessage(i);
                 size_t stag = tag.size();
                 size_t smsg = msg.size();
-                
+
                 // Checks whether msg ends with tag
                 if (stag <= smsg && msg.compare(smsg - stag, stag, tag) == 0)
                 {
                     _image_points = _detector->detector.getPolygon(i);
-                   
 
                     if (_state == no_object)
                         _state = newly_acquired_object;
@@ -69,18 +68,19 @@ namespace agimus_vision
             vpPose pose;
             vpImage<float> depthMap;
             vpImage<unsigned char> depthImage;
-            std::vector<int> tags_id = _detector->detector.getTagsId();
-            std::vector<std::vector<vpImagePoint>> tags_corners = _detector->detector.getPolygon();
+            vpImageConvert::convert(D, depthImage);
+           
             //set tag size to use in the fusion with depth
-            tags_size[_tag_id] =  _tag_size_meters;
-            depthMap.resize(D.getHeight(), D.getWidth());
-            for (unsigned int i = 0; i < D.getHeight(); i++)
+            tags_size[_tag_id] = _tag_size_meters;
+            
+            depthMap.resize(depthImage.getHeight(), depthImage.getWidth());
+            for (unsigned int i = 0; i < depthImage.getHeight(); i++)
             {
-                for (unsigned int j = 0; j < D.getWidth(); j++)
+                for (unsigned int j = 0; j < depthImage.getWidth(); j++)
                 {
-                    if (D[i][j])
+                    if (depthImage[i][j])
                     {
-                        float Z = D[i][j] * depthScale;
+                        float Z = depthImage[i][j] * depthScale;
                         depthMap[i][j] = Z;
                     }
                     else
@@ -89,9 +89,12 @@ namespace agimus_vision
                     }
                 }
             }
-
-        
+            
+            //get tags id seen, their 2d and 3d positions
+            std::vector<int> tags_id = _detector->detector.getTagsId();
+            std::vector<std::vector<vpImagePoint>> tags_corners = _detector->detector.getPolygon();
             std::vector<std::vector<vpPoint>> tags_points3d = _detector->detector.getTagsPoints3D(tags_id, tags_size);
+
             for (int i = 0; i < tags_corners.size(); i++)
             {
                 vpHomogeneousMatrix cMo;
