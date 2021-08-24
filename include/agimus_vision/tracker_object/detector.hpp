@@ -21,7 +21,7 @@ protected:
     State _state;
     
     vpCameraParameters _cam_parameters;
-
+    vpCameraParameters _depth_cam_parameters;
     std::vector< vpImagePoint > _image_points;
 
     vpHomogeneousMatrix _cMo;
@@ -49,7 +49,7 @@ protected:
     virtual std::vector< vpPoint > compute3DPoints() const;
 
 public:
-    Detector( const vpCameraParameters &cam_parameters );
+    Detector( const vpCameraParameters &cam_parameters,  const vpCameraParameters &depth_cam_parameters);
 
     virtual size_t id() const = 0;
     

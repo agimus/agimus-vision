@@ -48,6 +48,7 @@ class DetectorAprilTag : public Detector
 public:
     DetectorAprilTag( DetectorAprilTagWrapperPtr detector,
         const vpCameraParameters &cam_parameters,
+        const vpCameraParameters &depth_cam_parameters,
         const int tag_id,
         const double tag_size_meters );
 

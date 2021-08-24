@@ -6,6 +6,8 @@
 
   <!-- Setup vision -->
   <group ns="vision">
+    <node name="camera_to_xtion" pkg="tf2_ros" type="static_transform_publisher"
+    args="-0.016 -0.015 0.064 1.5707963 -1.5707963 0.0 xtion_rgb_optical_frame camera_link"/>
     <node pkg="agimus_vision" type="tracker_object"
         output="$(arg output)"
         name="tracker"
@@ -13,7 +15,7 @@
         <param name="imageTopic"      value="/camera/color/image_raw" />
         <param name="cameraInfoTopic" value="/camera/color/camera_info" />
         <param name="depthImageTopic" value="/camera/aligned_depth_to_color/image_raw" />
-        <param name="debugDisplay"    value="true" />
+        <param name="debugDisplay"    value="false" />
         <param name="broadcastTopic"  value="true" />
         <param name="broadcastTf"     value="true" />
         <param name="broadcastTfPostfix" value="_tf" />

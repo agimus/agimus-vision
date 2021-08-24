@@ -11,9 +11,10 @@
 namespace agimus_vision {
 namespace tracker_object {
 
-Detector::Detector( const vpCameraParameters &cam_parameters )
+Detector::Detector( const vpCameraParameters &cam_parameters, const vpCameraParameters &depth_cam_parameters )
   : _state{ no_object }
   , _cam_parameters{ cam_parameters }
+  , _depth_cam_parameters {depth_cam_parameters}
   , _residual_thr (1e-4)
   , _pose_thr (1e-3)
 {}

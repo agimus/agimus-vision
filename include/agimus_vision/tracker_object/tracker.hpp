@@ -196,11 +196,25 @@ class AprilTag : public InitializationStep, public TrackingStep
     {
       cam_ = cam;
     }
+    void depthCameraParameters (const vpCameraParameters& cam)
+    {
+      depth_cam_ = cam;
+    }
 
     std::shared_ptr<DetectorAprilTagWrapper> detector()
     {
       return detector_;
     }
+
+    vpHomogeneousMatrix compute3d3dTransformation(const std::vector<vpPoint>& p, const std::vector<vpPoint>& q);
+    void estimatePlaneEquationSVD(const std::vector<double> &point_cloud_face,
+                               vpColVector &plane_equation_estimated, vpColVector &centroid,
+                               double &normalized_weights);
+    double computeZMethod1(const vpColVector& plane_equation, double x, double y);
+    bool validPose(const vpHomogeneousMatrix& cMo);
+    bool computePlanarPoseFromRGBD(const vpImage<float> &depthMap, const std::vector<vpImagePoint> &corners,
+                                   const vpCameraParameters &colorIntrinsics, const std::vector<vpPoint> &point3d,
+                                   vpHomogeneousMatrix &cMo, std::vector<vpPoint> &pose_points, double *confidence_index);
 
   private:
     /// Fill the member \c detectedTags_
@@ -215,7 +229,7 @@ class AprilTag : public InitializationStep, public TrackingStep
 
     std::shared_ptr<DetectorAprilTagWrapper> detector_;
     vpCameraParameters cam_;
-
+    vpCameraParameters depth_cam_;
     std::vector<Tag> tags_;
 
     struct DetectedTag {

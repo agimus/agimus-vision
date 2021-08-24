@@ -37,6 +37,19 @@
 #include <message_filters/sync_policies/approximate_time.h>
 #include <message_filters/sync_policies/exact_time.h>
 
+// #include <visp3/core/vpConfig.h>
+// #ifdef VISP_HAVE_MODULE_SENSOR
+// #include <visp3/sensor/vpRealSense2.h>
+#include <visp3/sensor/vpRealSense2.h>
+#include <visp3/sensor/vpLaserScanner.h>
+// #endif
+#include <visp3/detection/vpDetectorAprilTag.h>
+#include <visp3/core/vpXmlParserCamera.h>
+#include <visp3/vision/vpPose.h>
+#include <visp3/gui/vpDisplayOpenCV.h>
+#include <visp3/core/vpImageConvert.h>
+#include <visp3/core/vpImagePoint.h>
+
 
 class vpDisplay;
 namespace image_transport { class Publisher; }
@@ -60,6 +73,7 @@ class Node
     std::string _image_topic;
     std::string _depth_image_topic;
     std::string _camera_info_topic;
+    std::string _depth_camera_info_topic;
 
 
     // Some params related to depth image info
@@ -71,7 +85,9 @@ class Node
     //Change to add depth
     message_filters::Subscriber<sensor_msgs::Image> _image_sub;      
     message_filters::Subscriber<sensor_msgs::Image> _deph_image_sub; 
-    
+    // ros::Subscriber _depth_image_sub;
+    // ros::Subscriber _image_sub;
+
     typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::Image> MySyncPolicy;
     // typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::Image> MySyncPolicy;
     typedef message_filters::Synchronizer<MySyncPolicy> Sync;
@@ -85,6 +101,7 @@ class Node
 
 
     ros::Subscriber _camera_info_sub;
+    ros::Subscriber _depth_camera_info_sub;
     tf2_ros::Buffer _tf_buffer;
     tf2_ros::TransformListener _tf_listener;
 
@@ -99,6 +116,7 @@ class Node
     std::mutex _image_lock;
     std::mutex _cam_param_lock;
     vpCameraParameters _cam_parameters;
+    vpCameraParameters _depth_cam_parameters;
     std_msgs::Header _image_header;
     vpImage<unsigned char> _gray_image;
     vpImage<uint16_t> _depth_image;
@@ -130,9 +148,6 @@ class Node
     ros::Publisher _publisherVision;
     ros::Publisher _detection_publisher;
     dynamic_reconfigure::Server<TrackerConfig> tracker_reconfigure;
-
-
-    //Get message from ros and convert to vpImage, although the range is 0-255 
    
 public:
     Node();
@@ -142,8 +157,10 @@ public:
     /// Callback to update the camera information
     /// \todo the camera parameters should be propagated to the downstream algos.
     void cameraInfoCallback(const sensor_msgs::CameraInfoConstPtr& camera_info);
+    void depthCameraInfoCallback(const sensor_msgs::CameraInfoConstPtr& depth_camera_info);
 
     /// Callback to use the images
+    // void frameCallback(const sensor_msgs::ImageConstPtr &image);
     void frameCallback(const sensor_msgs::ImageConstPtr &image, const sensor_msgs::ImageConstPtr &depth_image);
 
      /// Callback to use the depth images
@@ -179,6 +196,7 @@ public:
     void spin();
 
     vpImage<uint16_t> toVispImageFromDepth(const sensor_msgs::Image& src);
+    vpImage<uint16_t> toVispImageFromCVDepth(cv::Mat &depthImage);
 };
 
 }

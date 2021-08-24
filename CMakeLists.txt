@@ -38,9 +38,16 @@ find_package(catkin REQUIRED COMPONENTS
   dynamic_reconfigure
 )
 
+find_package(VISP REQUIRED visp_core visp_detection visp_io visp_gui visp_sensor)
+
 find_package(OpenCV REQUIRED)
 
-ADD_REQUIRED_DEPENDENCY("visp >= 3.2.0")
+if(NOT OPENCV_FOUND)
+	find_package(OpenCV REQUIRED COMPONENTS opencv_highgui opencv_features2d opencv_calib3d)
+	add_definitions(-DNO_CV_XFEATURES2D)
+endif()
+
+ADD_REQUIRED_DEPENDENCY("visp >= 3.4.0")
 
 add_message_files(
   FILES

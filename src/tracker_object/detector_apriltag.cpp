@@ -14,9 +14,10 @@ namespace agimus_vision
 
         DetectorAprilTag::DetectorAprilTag(DetectorAprilTagWrapperPtr detector,
                                            const vpCameraParameters &cam_parameters,
+                                           const vpCameraParameters &depth_cam_parameters,
                                            const int tag_id,
                                            const double tag_size_meters)
-            : Detector(cam_parameters), _detector{detector}, _tag_id{tag_id}, _tag_size_meters{tag_size_meters}
+            : Detector(cam_parameters, depth_cam_parameters), _detector{detector}, _tag_id{tag_id}, _tag_size_meters{tag_size_meters}
         {
             //default size value of all tag, to prevent exeception error when scanning all.
             tags_size[-1] =  _tag_size_meters;
@@ -68,19 +69,19 @@ namespace agimus_vision
             vpPose pose;
             vpImage<float> depthMap;
             vpImage<unsigned char> depthImage;
-            vpImageConvert::convert(D, depthImage);
+            // vpImageConvert::convert(D, depthImage);
            
             //set tag size to use in the fusion with depth
             tags_size[_tag_id] = _tag_size_meters;
-            
-            depthMap.resize(depthImage.getHeight(), depthImage.getWidth());
-            for (unsigned int i = 0; i < depthImage.getHeight(); i++)
+            // ROS_WARN_STREAM(std::to_string(tags_size[_tag_id]));
+            depthMap.resize(D.getHeight(), D.getWidth());
+            for (unsigned int i = 0; i < D.getHeight(); i++)
             {
-                for (unsigned int j = 0; j < depthImage.getWidth(); j++)
+                for (unsigned int j = 0; j < D.getWidth(); j++)
                 {
-                    if (depthImage[i][j])
+                    if (D[i][j])
                     {
-                        float Z = depthImage[i][j] * depthScale;
+                        float Z = D[i][j] * depthScale;
                         depthMap[i][j] = Z;
                     }
                     else

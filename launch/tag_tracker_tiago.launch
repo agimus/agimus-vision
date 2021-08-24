@@ -14,6 +14,7 @@
         <param name="imageTopic"      value="/xtion/rgb/image_raw" />
         <param name="cameraInfoTopic" value="/xtion/rgb/camera_info" />
         <param name="depthImageTopic" value="/xtion/depth/image_raw" />
+        <param name="depthCameraInfoTopic" value="/xtion/depth/camera_info" />
         <param name="debugDisplay"    value="true" />
         <param name="broadcastTopic"  value="true" />
         <param name="broadcastTf"     value="true" />

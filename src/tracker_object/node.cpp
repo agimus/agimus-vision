@@ -13,18 +13,23 @@
 #include <sensor_msgs/image_encodings.h>
 #include <image_transport/image_transport.h>
 
-#include <visp3/gui/vpDisplayOpenCV.h>
-#include <visp3/core/vpImageConvert.h>
-#include <visp3/core/vpImagePoint.h>
-
 #include <visp_bridge/image.h>
 #include <visp_bridge/camera.h>
 #include <visp_bridge/3dpose.h>
 
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
+#include <cv_bridge/cv_bridge.h>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/opencv.hpp>
+#include <opencv2/opencv.hpp>
+#include <opencv2/rgbd.hpp>
+
+
 
 using namespace message_filters;
+
 
 namespace agimus_vision
 {
@@ -71,7 +76,7 @@ namespace agimus_vision
       _node_handle.param<std::string>("imageTopic", _image_topic, "/camera/rgb/image_rect_color");
       _node_handle.param<std::string>("depthImageTopic", _depth_image_topic, "/camera/depth/image_rect");
       _node_handle.param<std::string>("cameraInfoTopic", _camera_info_topic, "/camera/rgb/camera_info");
-
+      _node_handle.param<std::string>("depthCameraInfoTopic", _depth_camera_info_topic, "/camera/depth/camera_info");
 
       // Initialize camera parameters
       ROS_INFO_STREAM("Wait for camera info message on " << _camera_info_topic);
@@ -82,24 +87,34 @@ namespace agimus_vision
         return;
       cameraInfoCallback(cam_info_msg);
 
+      ROS_INFO_STREAM("Wait for depth camera info message on " << _depth_camera_info_topic);
+      sensor_msgs::CameraInfoConstPtr depth_cam_info_msg =
+          ros::topic::waitForMessage<sensor_msgs::CameraInfo>(_depth_camera_info_topic,
+                                                              _node_handle);
+      if (!depth_cam_info_msg)
+        return;
+      depthCameraInfoCallback(depth_cam_info_msg);
+
       // Use those parameters to create the camera
       // _image_sub = _node_handle.subscribe(_image_topic, 1,
-                                          // &Node::frameCallback, this);
+      // &Node::frameCallback, this);
       _camera_info_sub = _node_handle.subscribe(_camera_info_topic, 1,
                                                 &Node::cameraInfoCallback, this);
-      // _depth_image_sub = _node_handle.subscribe(_depth_image_topic, 1,
-                                                // &Node::depthFrameCallback, this);
 
+      // _depth_image_sub = _node_handle.subscribe(_depth_image_topic, 1,
+      // &Node::depthFrameCallback, this);
+      _depth_camera_info_sub = _node_handle.subscribe(_depth_camera_info_topic, 1,
+                                                      &Node::depthCameraInfoCallback, this);
 
       _image_sub.subscribe(_node_handle, _image_topic, 1);
-      // ROS_INFO("Subcribed to the topic: %s", strImage_sub_topic.c_str());
+      ROS_INFO("Subcribed to the topic: %s", _image_topic.c_str());
 
       _deph_image_sub.subscribe(_node_handle, _depth_image_topic, 1);
-      // ROS_INFO("Subcribed to the topic: %s", strDepthImage_sub_topic.c_str());
+      ROS_INFO("Subcribed to the topic: %s", _depth_image_topic.c_str());
 
-      sync_.reset(new Sync(MySyncPolicy(100), _image_sub, _deph_image_sub));
+      sync_.reset(new Sync(MySyncPolicy(200), _image_sub, _deph_image_sub));
       sync_->registerCallback(boost::bind(&Node::frameCallback, this, _1, _2));
-      
+
       // TF node of the camera seeing the tags
       _node_handle.param<std::string>("cameraFrame", _tf_camera_node, "rgbd_rgb_optical_frame");
 
@@ -108,14 +123,14 @@ namespace agimus_vision
       _node_handle.param<std::string>("broadcastTfPostfix", _broadcast_tf_postfix, "");
       _node_handle.param<bool>("broadcastTopic", _broadcast_topic, false);
 
-
       //some others parameters
-      _node_handle.param<float>("depthScale", _depth_scale_param, (float)0.01); //0.1 for tiago's orbbec
+      _node_handle.param<float>("depthScale", _depth_scale_param, (float)0.001); //0.1 for tiago's orbbec
 
       // TODO: Switch for detector types and tracker init
       std::string object_type{};
       _node_handle.param<std::string>("objectType", object_type, "apriltag");
-      std::for_each(object_type.begin(), object_type.end(), [](char &c) { c = (char)::tolower(c); });
+      std::for_each(object_type.begin(), object_type.end(), [](char &c)
+                    { c = (char)::tolower(c); });
 
       _services.push_back(_node_handle.advertiseService("reset_tag_poses", &Node::resetTagPosesService, this));
 
@@ -129,11 +144,10 @@ namespace agimus_vision
         _services.push_back(_node_handle.advertiseService("set_chessboard_detector", &Node::setChessboardService, this));
       }
 
-      _publisherVision = _node_handle.advertise<geometry_msgs::TransformStamped>("/agimus/vision/tags", 100);
+      _publisherVision = _node_handle.advertise<geometry_msgs::TransformStamped>("/agimus/vision/tags", 500);
       _detection_publisher = _node_handle.advertise<agimus_vision::ImageDetectionResult>("/agimus/vision/detection", 100);
 
       tracker_reconfigure.setCallback(boost::bind(&Node::trackerReconfigureCallback, this, _1, _2));
-
     }
 
     Node::~Node()
@@ -150,6 +164,12 @@ namespace agimus_vision
     {
       std::lock_guard<std::mutex> lock(_cam_param_lock);
       _cam_parameters = visp_bridge::toVispCameraParameters(*camera_info);
+    }
+
+    void Node::depthCameraInfoCallback(const sensor_msgs::CameraInfoConstPtr &camera_info)
+    {
+      std::lock_guard<std::mutex> lock(_cam_param_lock);
+      _depth_cam_parameters = visp_bridge::toVispCameraParameters(*camera_info);
     }
 
     // void Node::frameCallback(const sensor_msgs::ImageConstPtr &image)
@@ -172,25 +192,59 @@ namespace agimus_vision
         ros::shutdown();
       }
 
-      _gray_image = visp_bridge::toVispImage(*image);
-  
+
+      //Distance between two sensors
+      //For realsense D435: -0.015 but 0 if enable depth and rgb registration
+      //For Tiago Orbec   : 0.047
+      double rgbDepthSensorDist;
+      if (_image_topic.find("xtion") != std::string::npos)
+        //  rgbDepthSensorDist = -0.00;
+         rgbDepthSensorDist = 0.047;
+      else
+          rgbDepthSensorDist = 0.0;
+
       try
       {
-        if ("16UC1" == depth_image->encoding)
-        {
-          _depth_image = toVispImageFromDepth(*depth_image);
-          // ROS_WARN_STREAM(_depth_image);
-        }
+
+      cv::Mat ColorMat = (cv::Mat_<double>(3, 3) << _cam_parameters.get_px(), 0, _cam_parameters.get_u0(),
+                          0, _cam_parameters.get_py(), _cam_parameters.get_v0(),
+                          0, 0, 1);
+
+      cv::Mat DepthMat = (cv::Mat_<double>(3, 3) << _depth_cam_parameters.get_px(), 0, _depth_cam_parameters.get_u0(),
+                          0, _depth_cam_parameters.get_py(), _depth_cam_parameters.get_v0(),
+                          0, 0, 1);
+
+      cv::Mat Rt = (cv::Mat_<double>(4, 4) << 1.0, 0.0, 0.0, rgbDepthSensorDist,
+                                              0.0, 1.0, 0.0, 0.0,
+                                              0.0, 0.0, 1.0, 0.0,
+                                              0.0, 0.0, 0.0, 1.0);
+
+      
+
+      //copy depth image to opencv mat
+      cv_bridge::CvImagePtr cvDepthPtr;
+      cvDepthPtr = cv_bridge::toCvCopy(depth_image, sensor_msgs::image_encodings::TYPE_16UC1);
+
+      cv::Mat frame_depth, frame_depth_reg;
+      cvDepthPtr->image.copyTo(frame_depth);
+
+      //rgb and depth has same size as default, so does not matter to use frame frame_depth.size()
+      cv::rgbd::registerDepth(DepthMat, ColorMat, cv::Mat(), Rt, frame_depth,
+                              frame_depth.size(), frame_depth_reg, true /* dilate */);
+
+      _gray_image = visp_bridge::toVispImage(*image);
+      _depth_image = toVispImageFromCVDepth(frame_depth_reg);
+
       }
       catch (const std::exception &e)
       {
         std::cerr << e.what() << '\n';
       }
 
+
       imageProcessing();
     }
 
-    
     // void Node::depthFrameCallback(const sensor_msgs::ImageConstPtr &image)
     // {
     //   std::unique_lock<std::mutex> lock(_image_lock, std::try_to_lock);
@@ -203,7 +257,6 @@ namespace agimus_vision
     //   }
 
     //   _image_header = image->header;
-      
 
     //   try
     //   {
@@ -229,6 +282,14 @@ namespace agimus_vision
         memcpy(dst.bitmap, &(src.data[0]), dst.getHeight() * src.step * sizeof(unsigned char));
       }
       // ROS_WARN_STREAM(dst);
+      return dst;
+    }
+
+    vpImage<uint16_t> Node::toVispImageFromCVDepth(cv::Mat &depthImage)
+    {
+      vpImage<uint16_t> dst(depthImage.rows, depthImage.cols);
+      memcpy(dst.bitmap, &depthImage.data[0], depthImage.rows * depthImage.cols * sizeof(uint16_t));
+
       return dst;
     }
 
@@ -258,8 +319,6 @@ namespace agimus_vision
         _aprilTagDetector->imageReady = false;
 
       auto timestamp = _image_header.stamp;
-
-    
 
       for (Tracker &tracker : _trackers)
       {
@@ -299,7 +358,7 @@ namespace agimus_vision
         const std::string &parent_name = detector.second.parent_name;
         const std::string &object_name = detector.second.object_name;
 
-      // if (detector_ptr->analyseImage(_gray_image) && detector_ptr->detect())
+        // if (detector_ptr->analyseImage(_gray_image) && detector_ptr->detect())
         if (detector_ptr->analyseImage(_gray_image) && detector_ptr->detectOnDepthImage(_depth_image, _depth_scale_param))
         {
           // c: camera
@@ -392,7 +451,7 @@ namespace agimus_vision
 
       ROS_INFO_STREAM("Id: " << req.id << '(' << req.size << "m) now being tracked.");
       DetectorPtr detector(new DetectorAprilTag(
-          _aprilTagDetector, _cam_parameters, req.id, req.size));
+          _aprilTagDetector, _cam_parameters, _depth_cam_parameters, req.id, req.size));
 
       detector->residualThreshold(_node_handle.param<double>("residualThreshold", 1e-4));
       detector->poseThreshold(_node_handle.param<double>("poseThreshold", 1e-3));
