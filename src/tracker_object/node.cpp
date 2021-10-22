@@ -112,7 +112,7 @@ namespace agimus_vision
       _deph_image_sub.subscribe(_node_handle, _depth_image_topic, 1);
       ROS_INFO("Subcribed to the topic: %s", _depth_image_topic.c_str());
 
-      sync_.reset(new Sync(MySyncPolicy(200), _image_sub, _deph_image_sub));
+      sync_.reset(new Sync(MySyncPolicy(50), _image_sub, _deph_image_sub));
       sync_->registerCallback(boost::bind(&Node::frameCallback, this, _1, _2));
 
       // TF node of the camera seeing the tags
@@ -144,7 +144,7 @@ namespace agimus_vision
         _services.push_back(_node_handle.advertiseService("set_chessboard_detector", &Node::setChessboardService, this));
       }
 
-      _publisherVision = _node_handle.advertise<geometry_msgs::TransformStamped>("/agimus/vision/tags", 500);
+      _publisherVision = _node_handle.advertise<geometry_msgs::TransformStamped>("/agimus/vision/tags", 100);
       _detection_publisher = _node_handle.advertise<agimus_vision::ImageDetectionResult>("/agimus/vision/detection", 100);
 
       tracker_reconfigure.setCallback(boost::bind(&Node::trackerReconfigureCallback, this, _1, _2));
@@ -199,7 +199,7 @@ namespace agimus_vision
       double rgbDepthSensorDist;
       if (_image_topic.find("xtion") != std::string::npos)
         //  rgbDepthSensorDist = -0.00;
-         rgbDepthSensorDist = 0.047;
+         rgbDepthSensorDist = -0.047;
       else
           rgbDepthSensorDist = 0.0;
 

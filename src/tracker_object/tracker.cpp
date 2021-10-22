@@ -219,7 +219,9 @@ namespace agimus_vision
         vpImage<unsigned char> depthImage;
         std::vector<int> tags_id;
         
-        bool bGot15 = false;
+        bool bCoplanar = true;
+
+
         vpHomogeneousMatrix new_cMo_;
         depthMap.resize(D.getHeight(), D.getWidth());
         for (unsigned int i = 0; i < D.getHeight(); i++)
@@ -240,13 +242,15 @@ namespace agimus_vision
 
         std::vector<std::vector<vpImagePoint>> vec_corner;
         std::vector<std::vector<vpPoint>>      vec_points3d;
-
+        std::vector<u_int16_t>                 tagsId;
+        //  std::vector<vpPoint> points3d;
+        // std::vector<vpImagePoint> points2d;
         for (const DetectedTag &dtag : detectedTags_)
         {
 
           std::vector<vpImagePoint> imagePoints = detector_->detector.getPolygon(dtag.i);
           std::array<vpPoint, 4> tPs = DetectorAprilTag::compute3DPoints(dtag.tag->size);
-        
+          tagsId.push_back(dtag.tag->id);
           std::vector<vpPoint> points3d;
           std::vector<vpImagePoint> points2d;  
           for (unsigned int j = 0; j < tPs.size(); j++)
@@ -267,12 +271,29 @@ namespace agimus_vision
         
           }
           vec_points3d.push_back(points3d);
+          // ROS_WARN_STREAM("At tag " + std::to_string(dtag.tag->id) 
+          //                           + " the size of 3d points is " 
+          //                           + std::to_string(points3d.size()));
           vec_corner.push_back(points2d);
 
         }
         double confidence_index;
-        if (vpPose::computePlanarObjectPoseFromRGBD(depthMap, vec_corner, cam_, vec_points3d, cMo_, &confidence_index)) 
+        // if (vpPose::computePlanarObjectPoseFromRGBD(depthMap, points2d, cam_, points3d, cMo_, &confidence_index)) 
+        //     ROS_WARN_STREAM("confidence_index:" + std::to_string(confidence_index));
+        if (vec_corner.size() > 2)
+        {
+         //P72
+         if (vpPose::computePlanarObjectPoseFromRGBD(depthMap, vec_corner,              cam_, vec_points3d, 
+                                                       tagsId,       cMo_, &confidence_index, true)){}
             ROS_WARN_STREAM("confidence_index:" + std::to_string(confidence_index));
+        }
+        else
+        {
+           //driller
+           if (vpPose::computePlanarObjectPoseFromRGBD(depthMap, vec_corner,              cam_, vec_points3d, 
+                                                       tagsId,       cMo_, &confidence_index, false)){}
+            ROS_WARN_STREAM("confidence_index:" + std::to_string(confidence_index));
+        }
         
 
       return state_tracking;
