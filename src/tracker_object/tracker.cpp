@@ -242,7 +242,7 @@ namespace agimus_vision
 
         std::vector<std::vector<vpImagePoint>> vec_corner;
         std::vector<std::vector<vpPoint>>      vec_points3d;
-        std::vector<u_int16_t>                 tagsId;
+        // std::vector<unsigned int>                 tagsId;
         //  std::vector<vpPoint> points3d;
         // std::vector<vpImagePoint> points2d;
         for (const DetectedTag &dtag : detectedTags_)
@@ -250,7 +250,7 @@ namespace agimus_vision
 
           std::vector<vpImagePoint> imagePoints = detector_->detector.getPolygon(dtag.i);
           std::array<vpPoint, 4> tPs = DetectorAprilTag::compute3DPoints(dtag.tag->size);
-          tagsId.push_back(dtag.tag->id);
+          // tagsId.push_back(dtag.tag->id);
           std::vector<vpPoint> points3d;
           std::vector<vpImagePoint> points2d;  
           for (unsigned int j = 0; j < tPs.size(); j++)
@@ -278,21 +278,20 @@ namespace agimus_vision
 
         }
         double confidence_index;
-        // if (vpPose::computePlanarObjectPoseFromRGBD(depthMap, points2d, cam_, points3d, cMo_, &confidence_index)) 
-        //     ROS_WARN_STREAM("confidence_index:" + std::to_string(confidence_index));
+    
         if (vec_corner.size() > 2)
         {
          //P72
-         if (vpPose::computePlanarObjectPoseFromRGBD(depthMap, vec_corner,              cam_, vec_points3d, 
-                                                       tagsId,       cMo_, &confidence_index, true)){}
-            ROS_WARN_STREAM("confidence_index:" + std::to_string(confidence_index));
+         if (vpPose::computePlanarObjectPoseFromRGBD(depthMap, vec_corner, cam_, vec_points3d, 
+                                                     cMo_, &confidence_index, true)){}
+            // ROS_WARN_STREAM("confidence_index:" + std::to_string(confidence_index));
         }
         else
         {
-           //driller
-           if (vpPose::computePlanarObjectPoseFromRGBD(depthMap, vec_corner,              cam_, vec_points3d, 
-                                                       tagsId,       cMo_, &confidence_index, false)){}
-            ROS_WARN_STREAM("confidence_index:" + std::to_string(confidence_index));
+          //  driller
+           if (vpPose::computePlanarObjectPoseFromRGBD(depthMap, vec_corner,cam_, vec_points3d, 
+                                                       cMo_, &confidence_index, false)){}
+            // ROS_WARN_STREAM("confidence_index:" + std::to_string(confidence_index));
         }
         
 
