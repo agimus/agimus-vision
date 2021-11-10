@@ -96,13 +96,9 @@ namespace agimus_vision
       depthCameraInfoCallback(depth_cam_info_msg);
 
       // Use those parameters to create the camera
-      // _image_sub = _node_handle.subscribe(_image_topic, 1,
-      // &Node::frameCallback, this);
       _camera_info_sub = _node_handle.subscribe(_camera_info_topic, 1,
                                                 &Node::cameraInfoCallback, this);
 
-      // _depth_image_sub = _node_handle.subscribe(_depth_image_topic, 1,
-      // &Node::depthFrameCallback, this);
       _depth_camera_info_sub = _node_handle.subscribe(_depth_camera_info_topic, 1,
                                                       &Node::depthCameraInfoCallback, this);
 
@@ -125,6 +121,7 @@ namespace agimus_vision
 
       //some others parameters
       _node_handle.param<float>("depthScale", _depth_scale_param, (float)0.001); //0.1 for tiago's orbbec
+      _node_handle.param<float>("depthRGBDistance", _depth_rgb_distance_param, (float)0.000); //0.047 for tiago's orbbec
 
       // TODO: Switch for detector types and tracker init
       std::string object_type{};
@@ -196,10 +193,11 @@ namespace agimus_vision
       //Distance between two sensors
       //For realsense D435: -0.015 but 0 if enable depth and rgb registration
       //For Tiago Orbec   : 0.047
+      ROS_WARN_STREAM("_depth_rgb_distance_param:" + std::to_string(_depth_rgb_distance_param));
       double rgbDepthSensorDist;
       if (_image_topic.find("xtion") != std::string::npos)
         //  rgbDepthSensorDist = -0.00;
-         rgbDepthSensorDist = -0.047;
+         rgbDepthSensorDist = -_depth_rgb_distance_param;
       else
           rgbDepthSensorDist = 0.0;
 
@@ -244,32 +242,6 @@ namespace agimus_vision
 
       imageProcessing();
     }
-
-    // void Node::depthFrameCallback(const sensor_msgs::ImageConstPtr &image)
-    // {
-    //   std::unique_lock<std::mutex> lock(_image_lock, std::try_to_lock);
-    //   if (!lock.owns_lock())
-    //     return;
-    //   if (_image_header.seq + 1 < image->header.seq)
-    //   {
-    //     // Delayed ignores the first _image_header which isn't initialized.
-    //     ROS_INFO_DELAYED_THROTTLE(5, "Some images were dropped.");
-    //   }
-
-    //   _image_header = image->header;
-
-    //   try
-    //   {
-    //     if ("16UC1" == image->encoding)
-    //     {
-    //       _depth_image = toVispImageFromDepth(*image);
-    //     }
-    //   }
-    //   catch (const std::exception &e)
-    //   {
-    //     std::cerr << e.what() << '\n';
-    //   }
-    // }
 
     vpImage<uint16_t> Node::toVispImageFromDepth(const sensor_msgs::Image &src)
     {
@@ -322,7 +294,6 @@ namespace agimus_vision
 
       for (Tracker &tracker : _trackers)
       {
-        // tracker.process(_gray_image, _depth_image, timestamp.toSec());
         tracker.process(_gray_image, _depth_image, timestamp.toSec(), _depth_scale_param);
         if (tracker.hasPose())
         {
@@ -358,7 +329,6 @@ namespace agimus_vision
         const std::string &parent_name = detector.second.parent_name;
         const std::string &object_name = detector.second.object_name;
 
-        // if (detector_ptr->analyseImage(_gray_image) && detector_ptr->detect())
         if (detector_ptr->analyseImage(_gray_image) && detector_ptr->detectOnDepthImage(_depth_image, _depth_scale_param))
         {
           // c: camera

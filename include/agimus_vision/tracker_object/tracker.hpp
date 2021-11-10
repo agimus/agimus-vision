@@ -96,7 +96,8 @@ class Tracker : public Reconfigurable
     /// initialization step to detect it.
     /// If the object was detected in the previous image, use the
     /// tracking step.
-    void process (const GrayImage_t& I, const vpImage<uint16_t>& D, const double time, float depthScale);
+    void process (const GrayImage_t& I, const vpImage<uint16_t>& D, 
+                  const double time, float depthScale);
 
     /// Whether an object pose could be computed.
     bool hasPose () const

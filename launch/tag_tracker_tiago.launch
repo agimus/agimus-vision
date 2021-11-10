@@ -22,6 +22,7 @@
         <param name="objectType"      value="apriltag" />
         <param name="cameraFrame"     value="xtion_optical_frame" />
         <param name="depthScale"      value="0.1"/>  
+        <param name="depthRGBDistance"      value="0.047"/>  
     </node>
 
     <!-- Table -->

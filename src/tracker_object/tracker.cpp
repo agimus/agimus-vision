@@ -10,14 +10,16 @@
 #include <visp3/core/vpPolygon.h>
 #include <visp3/core/vpPixelMeterConversion.h>
 #include <visp3/core/vpRobust.h>
-// #include <visp3/gui/vpDisplayGDI.h>
-// #include <visp3/gui/vpDisplayX.h>
+
 namespace agimus_vision
 {
   namespace tracker_object
   {
 
-    void Tracker::process(const GrayImage_t &I, const DepthMap_t &D, const double time, float depthScale)
+    void Tracker::process(const GrayImage_t &I, 
+                          const DepthMap_t  &D, 
+                          const double time, 
+                          float depthScale)
     {
       vpHomogeneousMatrix cMo;
       if (n_ > 0)
@@ -242,15 +244,12 @@ namespace agimus_vision
 
         std::vector<std::vector<vpImagePoint>> vec_corner;
         std::vector<std::vector<vpPoint>>      vec_points3d;
-        // std::vector<unsigned int>                 tagsId;
-        //  std::vector<vpPoint> points3d;
-        // std::vector<vpImagePoint> points2d;
+       
         for (const DetectedTag &dtag : detectedTags_)
         {
 
           std::vector<vpImagePoint> imagePoints = detector_->detector.getPolygon(dtag.i);
           std::array<vpPoint, 4> tPs = DetectorAprilTag::compute3DPoints(dtag.tag->size);
-          // tagsId.push_back(dtag.tag->id);
           std::vector<vpPoint> points3d;
           std::vector<vpImagePoint> points2d;  
           for (unsigned int j = 0; j < tPs.size(); j++)

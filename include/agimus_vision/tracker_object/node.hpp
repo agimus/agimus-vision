@@ -78,7 +78,7 @@ class Node
 
     // Some params related to depth image info
     float _depth_scale_param; // to use on Visp's compute Pose using RGBD info
-    
+    float _depth_rgb_distance_param; // distance btw depth and rgb sensor
     // ros::Subscriber _image_sub;
     // ros::Subscriber _depth_image_sub;
 

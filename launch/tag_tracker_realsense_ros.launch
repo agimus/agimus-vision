@@ -21,6 +21,7 @@
         <param name="broadcastTfPostfix" value="_tf" />
         <param name="objectType" value="apriltag" />
         <param name="cameraFrame" value="camera_link" />
+        <param name="depthRGBDistance"      value="0.0"/>
     </node>
 
     <!-- Table -->
