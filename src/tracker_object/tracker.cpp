@@ -289,7 +289,7 @@ namespace agimus_vision
         {
           //  driller
            if (vpPose::computePlanarObjectPoseFromRGBD(depthMap, vec_corner,cam_, vec_points3d, 
-                                                       cMo_, &confidence_index, false)){}
+                                                       cMo_, &confidence_index, true)){}
             // ROS_WARN_STREAM("confidence_index:" + std::to_string(confidence_index));
         }
         

@@ -193,7 +193,7 @@ namespace agimus_vision
       //Distance between two sensors
       //For realsense D435: -0.015 but 0 if enable depth and rgb registration
       //For Tiago Orbec   : 0.047
-      ROS_WARN_STREAM("_depth_rgb_distance_param:" + std::to_string(_depth_rgb_distance_param));
+      // ROS_WARN_STREAM("_depth_rgb_distance_param:" + std::to_string(_depth_rgb_distance_param));
       double rgbDepthSensorDist;
       if (_image_topic.find("xtion") != std::string::npos)
         //  rgbDepthSensorDist = -0.00;
