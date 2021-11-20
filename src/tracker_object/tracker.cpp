@@ -277,7 +277,7 @@ namespace agimus_vision
 
         }
         double confidence_index;
-    
+        vpHomogeneousMatrix old_cMo_ = cMo_;
         if (vec_corner.size() > 2)
         {
          //P72
@@ -293,7 +293,8 @@ namespace agimus_vision
             // ROS_WARN_STREAM("confidence_index:" + std::to_string(confidence_index));
         }
         
-
+        if (!cMo_.isAnHomogeneousMatrix())
+          cMo_ = old_cMo_;
       return state_tracking;
       }
 
