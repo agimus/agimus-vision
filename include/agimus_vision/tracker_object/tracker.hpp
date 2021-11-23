@@ -6,6 +6,7 @@
 #include <visp3/core/vpImage.h>
 #include <visp3/core/vpCameraParameters.h>
 #include <visp3/mbt/vpMbGenericTracker.h>
+#include <visp3/sensor/vpRealSense2.h>
 
 #include <agimus_vision/tracker_object/detector_apriltag.hpp>
 #include <agimus_vision/TrackerConfig.h>
@@ -44,7 +45,7 @@ public:
 
   /// Track the object.
   /// \param I a new image.
-  virtual State track(const GrayImage_t& I) = 0;
+  virtual State track(const GrayImage_t& I, const DepthMap_t& D, float depthScale) = 0;
 
   /// Get the object pose
   virtual void getPose (vpHomogeneousMatrix& cMo) const = 0;
@@ -95,7 +96,8 @@ class Tracker : public Reconfigurable
     /// initialization step to detect it.
     /// If the object was detected in the previous image, use the
     /// tracking step.
-    void process (const GrayImage_t& I, const double time);
+    void process (const GrayImage_t& I, const vpImage<uint16_t>& D, 
+                  const double time, float depthScale);
 
     /// Whether an object pose could be computed.
     bool hasPose () const
@@ -179,7 +181,7 @@ class AprilTag : public InitializationStep, public TrackingStep
     ///         the pose. Take example of what is done in DetectorAprilTag.
     ///       - Easy: Use a ModelBased tracker that contains only the edges of
     ///         tag. This should be done outside of this class.
-    State track(const GrayImage_t &I);
+    State track(const GrayImage_t &I, const DepthMap_t &D, float depthScale);
 
     void getPose (vpHomogeneousMatrix& cMo) const
     {
@@ -195,11 +197,16 @@ class AprilTag : public InitializationStep, public TrackingStep
     {
       cam_ = cam;
     }
+    void depthCameraParameters (const vpCameraParameters& cam)
+    {
+      depth_cam_ = cam;
+    }
 
     std::shared_ptr<DetectorAprilTagWrapper> detector()
     {
       return detector_;
     }
+
 
   private:
     /// Fill the member \c detectedTags_
@@ -214,7 +221,7 @@ class AprilTag : public InitializationStep, public TrackingStep
 
     std::shared_ptr<DetectorAprilTagWrapper> detector_;
     vpCameraParameters cam_;
-
+    vpCameraParameters depth_cam_;
     std::vector<Tag> tags_;
 
     struct DetectedTag {
@@ -222,6 +229,7 @@ class AprilTag : public InitializationStep, public TrackingStep
       Tag* tag;
     };
     std::vector<DetectedTag> detectedTags_;
+    std::map<int, double> tags_size;
     vpHomogeneousMatrix cMo_;
 };
 

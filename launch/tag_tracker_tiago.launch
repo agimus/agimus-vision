@@ -1,0 +1,34 @@
+<launch>
+  <arg name="output" default="log"/>
+  <arg name="state_estimation" default="false"/>
+  <arg name="standalone" default="true"/>
+
+
+  <!-- Setup vision -->
+  <group ns="vision">
+    <node pkg="agimus_vision" type="tracker_object"
+        output="$(arg output)"
+        name="tracker"
+        >
+
+        <param name="imageTopic"      value="/xtion/rgb/image_raw" />
+        <param name="cameraInfoTopic" value="/xtion/rgb/camera_info" />
+        <param name="depthImageTopic" value="/xtion/depth/image_raw" />
+        <param name="depthCameraInfoTopic" value="/xtion/depth/camera_info" />
+        <param name="debugDisplay"    value="true" />
+        <param name="broadcastTopic"  value="true" />
+        <param name="broadcastTf"     value="true" />
+        <param name="broadcastTfPostfix" value="_tf" />
+        <param name="objectType"      value="apriltag" />
+        <param name="cameraFrame"     value="xtion_optical_frame" />
+        <param name="depthScale"      value="0.1"/>  
+        <param name="depthRGBDistance"      value="0.047"/>  
+    </node>
+
+    <!-- Table -->
+  </group>
+</launch>
+
+
+<!-- rosservice call /vision/tracker/add_april_tag_detector 16 0.1725 "tag16" "xtion_optical_frame" -->
+

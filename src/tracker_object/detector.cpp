@@ -11,19 +11,26 @@
 namespace agimus_vision {
 namespace tracker_object {
 
-Detector::Detector( const vpCameraParameters &cam_parameters )
+Detector::Detector( const vpCameraParameters &cam_parameters, const vpCameraParameters &depth_cam_parameters )
   : _state{ no_object }
   , _cam_parameters{ cam_parameters }
+  , _depth_cam_parameters {depth_cam_parameters}
   , _residual_thr (1e-4)
   , _pose_thr (1e-3)
 {}
 
-bool Detector::analyseImage( const vpImage< unsigned char > &/*gray_image*/ )
+bool Detector::analyseImage( const vpImage< unsigned char > &gray_image )
 {
     return false;
 }
 
 bool Detector::detect()
+{
+    return false;
+}
+
+
+bool Detector::detectOnDepthImage(const DepthMap_t& I, float depthScale)
 {
     return false;
 }
@@ -35,8 +42,12 @@ void Detector::drawDebug( GrayImage_t&/*I*/ ) const
 // PRIVATE
 // -----
 
+
+
+
 bool Detector::computePose()
 {
+    //  ROS_WARN_STREAM("computePose");
     if( _state == no_object )
         return false;
 
@@ -106,6 +117,7 @@ bool Detector::computePose()
  
     assert(_state == already_acquired_object);
     pose.computePose( vpPose::VIRTUAL_VS, _cMo );
+    // ROS_WARN_STREAM(_cMo);
     _error = pose.computeResidual( _cMo );
     return true;
 }

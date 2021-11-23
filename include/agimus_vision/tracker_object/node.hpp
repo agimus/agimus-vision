@@ -30,6 +30,27 @@
 #include "agimus_vision/AddObjectTracking.h"
 #include "agimus_vision/SetChessboardService.h"
 
+//Use message filters to sync color and depth image 
+#include "tf/message_filter.h"
+#include <message_filters/subscriber.h>
+#include <message_filters/time_synchronizer.h>
+#include <message_filters/sync_policies/approximate_time.h>
+#include <message_filters/sync_policies/exact_time.h>
+
+// #include <visp3/core/vpConfig.h>
+// #ifdef VISP_HAVE_MODULE_SENSOR
+// #include <visp3/sensor/vpRealSense2.h>
+#include <visp3/sensor/vpRealSense2.h>
+#include <visp3/sensor/vpLaserScanner.h>
+// #endif
+#include <visp3/detection/vpDetectorAprilTag.h>
+#include <visp3/core/vpXmlParserCamera.h>
+#include <visp3/vision/vpPose.h>
+#include <visp3/gui/vpDisplayOpenCV.h>
+#include <visp3/core/vpImageConvert.h>
+#include <visp3/core/vpImagePoint.h>
+
+
 class vpDisplay;
 namespace image_transport { class Publisher; }
 
@@ -50,12 +71,41 @@ class Node
 
     // Names of the topics sending the images and infos
     std::string _image_topic;
+    std::string _depth_image_topic;
     std::string _camera_info_topic;
+    std::string _depth_camera_info_topic;
+
+
+    // Some params related to depth image info
+    float _depth_scale_param; // to use on Visp's compute Pose using RGBD info
+    float _depth_rgb_distance_param; // distance btw depth and rgb sensor
+    // ros::Subscriber _image_sub;
+    // ros::Subscriber _depth_image_sub;
+
+    //Change to add depth
+    message_filters::Subscriber<sensor_msgs::Image> _image_sub;      
+    message_filters::Subscriber<sensor_msgs::Image> _deph_image_sub; 
+    // ros::Subscriber _depth_image_sub;
+    // ros::Subscriber _image_sub;
+
+    typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::Image> MySyncPolicy;
+    // typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::Image> MySyncPolicy;
+    typedef message_filters::Synchronizer<MySyncPolicy> Sync;
+    boost::shared_ptr<Sync> sync_;
     
-    ros::Subscriber _image_sub;
+    sensor_msgs::ImageConstPtr rgbImage;
+    sensor_msgs::ImageConstPtr depthImage;
+
+    
+    //end change to add depth
+
+
     ros::Subscriber _camera_info_sub;
+    ros::Subscriber _depth_camera_info_sub;
     tf2_ros::Buffer _tf_buffer;
     tf2_ros::TransformListener _tf_listener;
+
+
 
     // Names of the publication TF nodes   
     std::string _tf_camera_node;
@@ -66,9 +116,12 @@ class Node
     std::mutex _image_lock;
     std::mutex _cam_param_lock;
     vpCameraParameters _cam_parameters;
+    vpCameraParameters _depth_cam_parameters;
     std_msgs::Header _image_header;
     vpImage<unsigned char> _gray_image;
-
+    vpImage<uint16_t> _depth_image;
+    vpImage<unsigned char> _depth_image_8bit;
+    
     // Classes called to detect some object in the image and then track it
     std::shared_ptr<DetectorAprilTagWrapper> _aprilTagDetector;
     struct DetectorAndName {
@@ -95,7 +148,7 @@ class Node
     ros::Publisher _publisherVision;
     ros::Publisher _detection_publisher;
     dynamic_reconfigure::Server<TrackerConfig> tracker_reconfigure;
-
+   
 public:
     Node();
 
@@ -104,9 +157,14 @@ public:
     /// Callback to update the camera information
     /// \todo the camera parameters should be propagated to the downstream algos.
     void cameraInfoCallback(const sensor_msgs::CameraInfoConstPtr& camera_info);
+    void depthCameraInfoCallback(const sensor_msgs::CameraInfoConstPtr& depth_camera_info);
 
     /// Callback to use the images
-    void frameCallback(const sensor_msgs::ImageConstPtr& image);
+    // void frameCallback(const sensor_msgs::ImageConstPtr &image);
+    void frameCallback(const sensor_msgs::ImageConstPtr &image, const sensor_msgs::ImageConstPtr &depth_image);
+
+     /// Callback to use the depth images
+    // void depthFrameCallback(const sensor_msgs::ImageConstPtr& image);
 
     /// Reconfiguration callback
     void trackerReconfigureCallback(TrackerConfig &config, uint32_t level);
@@ -136,6 +194,9 @@ public:
     void initAprilTagDetector ();
     
     void spin();
+
+    vpImage<uint16_t> toVispImageFromDepth(const sensor_msgs::Image& src);
+    vpImage<uint16_t> toVispImageFromCVDepth(cv::Mat &depthImage);
 };
 
 }

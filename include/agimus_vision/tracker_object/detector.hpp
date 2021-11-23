@@ -21,7 +21,7 @@ protected:
     State _state;
     
     vpCameraParameters _cam_parameters;
-
+    vpCameraParameters _depth_cam_parameters;
     std::vector< vpImagePoint > _image_points;
 
     vpHomogeneousMatrix _cMo;
@@ -35,6 +35,8 @@ protected:
 
     bool computePose();
 
+    bool computePosetOnDepthImage(const DepthMap_t& I);
+
     /// Compare the pose computed used vpPose::DEMENTHON_VIRTUAL_VS and
     /// vpPose::LAGRANGE_VIRTUAL_VS.
     /// If both pose have a projection residual below _residual_thr and
@@ -47,13 +49,14 @@ protected:
     virtual std::vector< vpPoint > compute3DPoints() const;
 
 public:
-    Detector( const vpCameraParameters &cam_parameters );
+    Detector( const vpCameraParameters &cam_parameters,  const vpCameraParameters &depth_cam_parameters);
 
     virtual size_t id() const = 0;
     
     virtual bool analyseImage( const vpImage< unsigned char > &gray_image );
 
     virtual bool detect();
+    virtual bool detectOnDepthImage(const DepthMap_t& I, float depthScale);
 
     virtual void drawDebug( GrayImage_t& I ) const;
 
