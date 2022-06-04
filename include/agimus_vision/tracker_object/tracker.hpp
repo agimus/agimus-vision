@@ -213,9 +213,13 @@ class AprilTag : public InitializationStep, public TrackingStep
     bool detectTags(const GrayImage_t& I);
 
     struct Tag {
+      // pose of the tag in the object frame
       vpHomogeneousMatrix oMt;
+      // size of the square without white border
       double size;
+      // id of the tag: something like 11
       int id;
+      // name of the tag: something like "36h11 id: 00011"
       std::string message;
     };
 
