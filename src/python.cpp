@@ -83,7 +83,7 @@ std::array<std::array<double, 3>, 4> aprilTagPoints (double size)
   std::array< vpPoint, 4 > tPs = to::DetectorAprilTag::compute3DPoints(size);
   std::array<std::array<double, 3>, 4> pts;
   for (int i = 0; i < 4; ++i)
-    pts[i] = { tPs[i].oP[0], tPs[i].oP[1], tPs[i].oP[2], };
+    pts[i] = {{ tPs[i].oP[0], tPs[i].oP[1], tPs[i].oP[2], }};
   return pts;
 }
 
@@ -92,19 +92,19 @@ PYBIND11_PLUGIN(py_agimus_vision) {
 
     py::class_<vpColVector>(m, "ColVector", py::buffer_protocol())
       .def(py::init<>())
-      .def("__init__", [](vpColVector &m, py::array_t<double> b) {
+      .def("__init__", [](vpColVector &m1, py::array_t<double> b) {
             vpColVector _m((unsigned)b.size());
             for (unsigned i = 0; i < b.size(); ++i)
               _m[i] = *b.data(i);
-            new (&m) vpColVector(std::move(_m));
+            new (&m1) vpColVector(std::move(_m));
           })
-      .def_buffer([](vpColVector &m) -> py::buffer_info {
+      .def_buffer([](vpColVector &m1) -> py::buffer_info {
         return py::buffer_info(
-            m.data,                                 /* Pointer to buffer */
+            m1.data,                                 /* Pointer to buffer */
             sizeof(double),                         /* Size of one scalar */
             py::format_descriptor<double>::format(),/* Python struct-style format descriptor */
             1,                                      /* Number of dimensions */
-            { m.size() },                           /* Buffer dimensions */
+            { m1.size() },                           /* Buffer dimensions */
             { sizeof(double) }                      /* Strides (in bytes) for each index */
         );
     });
@@ -149,16 +149,16 @@ PYBIND11_PLUGIN(py_agimus_vision) {
 
     py::class_<vpHomogeneousMatrix>(m, "HomogeneousMatrix", py::buffer_protocol())
       .def(py::init<>())
-      .def("__init__", [](vpHomogeneousMatrix &m, py::array_t<double> b) {
+      .def("__init__", [](vpHomogeneousMatrix &m1, py::array_t<double> b) {
             vpHomogeneousMatrix _m;
             for (int i = 0; i < 4; ++i)
               for (int j = 0; j < 4; ++j)
                 _m[i][j] = *b.data(i,j);
-            new (&m) vpHomogeneousMatrix(_m);
+            new (&m1) vpHomogeneousMatrix(_m);
           })
-      .def_buffer([](vpHomogeneousMatrix &m) -> py::buffer_info {
+      .def_buffer([](vpHomogeneousMatrix &m1) -> py::buffer_info {
         return py::buffer_info(
-            m.data,                                 /* Pointer to buffer */
+            m1.data,                                 /* Pointer to buffer */
             sizeof(double),                         /* Size of one scalar */
             py::format_descriptor<double>::format(),/* Python struct-style format descriptor */
             2,                                      /* Number of dimensions */
