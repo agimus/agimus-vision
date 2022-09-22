@@ -46,7 +46,6 @@ namespace agimus_vision
         state_ = tracking_->track(I, D, depthScale);
         if (filtering_)
         {
-          vpHomogeneousMatrix cMo;
           tracking_->getPose(cMo);
           filtering_->filter(cMo, time);
         }

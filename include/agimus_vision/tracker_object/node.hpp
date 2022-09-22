@@ -94,7 +94,7 @@ class Node
     boost::shared_ptr<Sync> sync_;
     
     sensor_msgs::ImageConstPtr rgbImage;
-    sensor_msgs::ImageConstPtr depthImage;
+    sensor_msgs::ImageConstPtr depthImage_;
 
     
     //end change to add depth
